@@ -30,6 +30,7 @@ export interface Resident {
     gender: 'male' | 'female';
     house_id: string;         // บ้านที่อาศัย
     relationship: string;     // ความสัมพันธ์กับเจ้าบ้าน
+    disease?: string;
 }
 
 // กลุ่มอายุ

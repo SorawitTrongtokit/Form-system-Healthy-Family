@@ -157,15 +157,15 @@ export default function MapPage() {
                     <div className="flex flex-wrap gap-4 justify-center">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow"></div>
-                            <span className="text-sm text-gray-700">สำรวจครบ</span>
+                            <span className="text-sm text-gray-700">ผ่านเกณฑ์ทุกคน</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-yellow-500 rounded-full border-2 border-white shadow"></div>
-                            <span className="text-sm text-gray-700">สำรวจบางส่วน</span>
+                            <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow"></div>
+                            <span className="text-sm text-gray-700">มีคนไม่ผ่านเกณฑ์</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-gray-400 rounded-full border-2 border-white shadow"></div>
-                            <span className="text-sm text-gray-700">ยังไม่สำรวจ</span>
+                            <span className="text-sm text-gray-700">สำรวจยังไม่ครบ</span>
                         </div>
                     </div>
                 </div>
@@ -205,8 +205,8 @@ export default function MapPage() {
                                 <div
                                     key={house.id}
                                     className={`p-4 bg-gray-50 rounded-lg border-l-4 cursor-pointer hover:bg-gray-100 transition-colors ${house.status === 'complete' ? 'border-green-500' :
-                                            house.status === 'partial' ? 'border-yellow-500' :
-                                                'border-gray-400'
+                                        house.status === 'partial' ? 'border-yellow-500' :
+                                            'border-gray-400'
                                         } ${selectedHouse?.id === house.id ? 'ring-2 ring-teal-400' : ''}`}
                                     onClick={() => setSelectedHouse(selectedHouse?.id === house.id ? null : house)}
                                 >
@@ -218,8 +218,8 @@ export default function MapPage() {
                                             </p>
                                         </div>
                                         <span className={`badge ${house.status === 'complete' ? 'badge-success' :
-                                                house.status === 'partial' ? 'badge-warning' :
-                                                    'badge-gray'
+                                            house.status === 'partial' ? 'badge-warning' :
+                                                'badge-gray'
                                             }`}>
                                             {getStatusEmoji(house.status)} {house.surveyedCount}/{house.totalResidents}
                                         </span>
@@ -259,9 +259,9 @@ export default function MapPage() {
                                                             <span className="text-gray-400 text-sm ml-2">({resident.relationship})</span>
                                                         </div>
                                                         <span className={`text-xs px-2 py-1 rounded ${resident.status === 'passed' ? 'bg-green-100 text-green-700' :
-                                                                resident.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                                                    resident.status === 'other' ? 'bg-blue-100 text-blue-700' :
-                                                                        'bg-gray-100 text-gray-600'
+                                                            resident.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                                                resident.status === 'other' ? 'bg-blue-100 text-blue-700' :
+                                                                    'bg-gray-100 text-gray-600'
                                                             }`}>
                                                             {getResidentStatusLabel(resident.status)}
                                                         </span>

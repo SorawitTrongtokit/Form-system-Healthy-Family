@@ -226,6 +226,7 @@ export default function SurveyPage() {
                                 type="number"
                                 step="0.1"
                                 className="input"
+                                placeholder="กรอกน้ำหนัก"
                                 value={formData.weight || ''}
                                 onChange={(e) => handleInputChange('weight', parseFloat(e.target.value) || 0)}
                                 required
@@ -237,6 +238,7 @@ export default function SurveyPage() {
                                 type="number"
                                 step="0.1"
                                 className="input"
+                                placeholder="กรอกส่วนสูง"
                                 value={formData.height || ''}
                                 onChange={(e) => handleInputChange('height', parseFloat(e.target.value) || 0)}
                                 required
@@ -260,49 +262,49 @@ export default function SurveyPage() {
                             {formData.weight_criteria && (
                                 <div className="grid-3 mb-4">
                                     <div className={`p-3 rounded-lg text-center border-2 ${formData.weight_criteria === 'normal'
-                                            ? 'bg-green-50 border-green-300'
-                                            : formData.weight_criteria === 'underweight'
-                                                ? 'bg-orange-50 border-orange-300'
-                                                : 'bg-red-50 border-red-300'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.weight_criteria === 'underweight'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-red-50 border-red-300'
                                         }`}>
                                         <p className="text-sm text-gray-600">เกณฑ์น้ำหนัก</p>
                                         <p className={`font-bold ${formData.weight_criteria === 'normal'
-                                                ? 'text-green-700'
-                                                : formData.weight_criteria === 'underweight'
-                                                    ? 'text-orange-700'
-                                                    : 'text-red-700'
+                                            ? 'text-green-700'
+                                            : formData.weight_criteria === 'underweight'
+                                                ? 'text-orange-700'
+                                                : 'text-red-700'
                                             }`}>
                                             {formData.weight_criteria === 'normal' ? '✅' : formData.weight_criteria === 'underweight' ? '⚠️' : '🔴'} {criteriaLabels.weight_criteria[formData.weight_criteria]}
                                         </p>
                                     </div>
                                     <div className={`p-3 rounded-lg text-center border-2 ${formData.height_criteria === 'normal'
-                                            ? 'bg-green-50 border-green-300'
-                                            : formData.height_criteria === 'short'
-                                                ? 'bg-orange-50 border-orange-300'
-                                                : 'bg-blue-50 border-blue-300'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.height_criteria === 'short'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-blue-50 border-blue-300'
                                         }`}>
                                         <p className="text-sm text-gray-600">เกณฑ์ส่วนสูง</p>
                                         <p className={`font-bold ${formData.height_criteria === 'normal'
-                                                ? 'text-green-700'
-                                                : formData.height_criteria === 'short'
-                                                    ? 'text-orange-700'
-                                                    : 'text-blue-700'
+                                            ? 'text-green-700'
+                                            : formData.height_criteria === 'short'
+                                                ? 'text-orange-700'
+                                                : 'text-blue-700'
                                             }`}>
                                             {formData.height_criteria === 'normal' ? '✅' : formData.height_criteria === 'short' ? '⚠️' : '📏'} {criteriaLabels.height_criteria[formData.height_criteria || 'normal']}
                                         </p>
                                     </div>
                                     <div className={`p-3 rounded-lg text-center border-2 ${formData.weight_for_height === 'normal'
-                                            ? 'bg-green-50 border-green-300'
-                                            : formData.weight_for_height === 'underweight'
-                                                ? 'bg-orange-50 border-orange-300'
-                                                : 'bg-red-50 border-red-300'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.weight_for_height === 'underweight'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-red-50 border-red-300'
                                         }`}>
                                         <p className="text-sm text-gray-600">น้ำหนัก/ส่วนสูง</p>
                                         <p className={`font-bold ${formData.weight_for_height === 'normal'
-                                                ? 'text-green-700'
-                                                : formData.weight_for_height === 'underweight'
-                                                    ? 'text-orange-700'
-                                                    : 'text-red-700'
+                                            ? 'text-green-700'
+                                            : formData.weight_for_height === 'underweight'
+                                                ? 'text-orange-700'
+                                                : 'text-red-700'
                                             }`}>
                                             {formData.weight_for_height === 'normal' ? '✅' : formData.weight_for_height === 'underweight' ? '⚠️' : '🔴'} {criteriaLabels.weight_for_height[formData.weight_for_height || 'normal']}
                                         </p>

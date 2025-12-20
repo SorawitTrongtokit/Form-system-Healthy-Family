@@ -25,8 +25,8 @@ export default function LandingPage() {
                 <nav className="relative z-10 container mx-auto px-6 py-6">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                <span className="text-2xl">❤️</span>
+                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                                <img src="/logo.jpg" alt="รพ.สต.มะตูม" className="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <h1 className="text-white font-bold text-xl">รพ.สต.มะตูม</h1>

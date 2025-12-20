@@ -1,0 +1,22 @@
+{
+    "name": "ระบบแบบฟอร์มครอบครัวสุขภาพดี",
+    "short_name": "รพ.สต.มะตูม",
+    "description": "ระบบบันทึกข้อมูลสุขภาพประชาชน รพ.สต.มะตูม ตำบลมะตูม",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0d9488",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/logo.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg"
+        },
+        {
+            "src": "/logo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg"
+        }
+    ]
+}

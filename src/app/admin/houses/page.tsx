@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -23,24 +23,27 @@ export default function AdminHouses() {
     const [formData, setFormData] = useState({ house_number: '', village_no: 6, volunteer_id: '' });
     const [volunteers, setVolunteers] = useState<{ id: string; name: string }[]>([]);
     const router = useRouter();
+    const loadDataRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
     useEffect(() => {
+        const loadData = async () => {
+            const [housesRes, volunteersRes] = await Promise.all([
+                supabase.from('houses').select('*').order('house_number').limit(2000),
+                supabase.from('volunteers').select('id, name').limit(500)
+            ]);
+            setHouses(housesRes.data || []);
+            setVolunteers(volunteersRes.data || []);
+            setLoading(false);
+        };
+
+        loadDataRef.current = loadData;
+
         if (typeof window !== 'undefined' && !localStorage.getItem('adminLoggedIn')) {
             router.push('/admin');
             return;
         }
         loadData();
     }, [router]);
-
-    async function loadData() {
-        const [housesRes, volunteersRes] = await Promise.all([
-            supabase.from('houses').select('*').order('house_number'),
-            supabase.from('volunteers').select('id, name')
-        ]);
-        setHouses(housesRes.data || []);
-        setVolunteers(volunteersRes.data || []);
-        setLoading(false);
-    }
 
     const filteredHouses = houses.filter(h =>
         h.house_number.includes(searchQuery)
@@ -56,7 +59,7 @@ export default function AdminHouses() {
         if (!error) {
             setShowAddModal(false);
             setFormData({ house_number: '', village_no: 6, volunteer_id: '' });
-            loadData();
+            loadDataRef.current?.();
         }
     };
 
@@ -67,14 +70,14 @@ export default function AdminHouses() {
             .eq('id', editingHouse.id);
         if (!error) {
             setEditingHouse(null);
-            loadData();
+            loadDataRef.current?.();
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('ยืนยันการลบ? (จะลบข้อมูลประชากรในบ้านด้วย)')) return;
         await supabase.from('houses').delete().eq('id', id);
-        loadData();
+        loadDataRef.current?.();
     };
 
     if (loading) {

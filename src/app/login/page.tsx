@@ -4,24 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateThaiNationalId } from '@/lib/validation';
-import { loginAsync, getAllVolunteersAsync, initializeStore } from '@/lib/store';
-import { Volunteer } from '@/lib/types';
+import { loginAsync, initializeStore } from '@/lib/store';
 
 export default function LoginPage() {
     const [nationalId, setNationalId] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-    const [loadingVolunteers, setLoadingVolunteers] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
         initializeStore();
-        // Load volunteers from Supabase
-        getAllVolunteersAsync().then(vols => {
-            setVolunteers(vols);
-            setLoadingVolunteers(false);
-        });
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -126,36 +118,7 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Demo IDs for testing */}
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                        <p className="text-sm text-gray-500 text-center mb-4">
-                            <strong>อาสาสมัครหมู่ 6:</strong> คลิกเลือกเพื่อเข้าสู่ระบบ
-                        </p>
-                        {loadingVolunteers ? (
-                            <div className="text-center py-4">
-                                <div className="loading-spinner mx-auto"></div>
-                                <p className="text-sm text-gray-500 mt-2">กำลังโหลดข้อมูล...</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {volunteers.slice(0, 5).map((vol) => (
-                                    <button
-                                        key={vol.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setNationalId(vol.national_id);
-                                            setError('');
-                                        }}
-                                        className="w-full text-left p-3 bg-gray-50 hover:bg-teal-50 rounded-lg transition-colors border border-gray-200 hover:border-teal-300"
-                                    >
-                                        <span className="font-mono text-sm text-gray-600">{vol.national_id}</span>
-                                        <br />
-                                        <span className="text-gray-800">{vol.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+
                 </div>
 
                 {/* Footer */}

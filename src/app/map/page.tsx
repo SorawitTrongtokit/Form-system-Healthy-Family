@@ -63,13 +63,6 @@ export default function MapPage() {
         );
     }
 
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'complete': return 'สำรวจครบ';
-            case 'partial': return 'สำรวจบางส่วน';
-            default: return 'ยังไม่สำรวจ';
-        }
-    };
 
     const getStatusEmoji = (status: string) => {
         switch (status) {

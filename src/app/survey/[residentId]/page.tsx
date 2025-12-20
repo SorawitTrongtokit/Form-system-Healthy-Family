@@ -11,7 +11,7 @@ import {
     saveHealthRecordAsync,
     restoreSession
 } from '@/lib/store';
-import { Resident, House, HealthRecord, AgeGroup } from '@/lib/types';
+import { Resident, HealthRecord, AgeGroup } from '@/lib/types';
 import {
     calculateAge,
     calculateAgeInMonths,
@@ -34,7 +34,6 @@ export default function SurveyPage() {
     const houseId = searchParams.get('houseId') || '';
 
     const [resident, setResident] = useState<Resident | null>(null);
-    const [house, setHouse] = useState<House | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -46,7 +45,24 @@ export default function SurveyPage() {
     const [age, setAge] = useState(0);
     const [ageMonths, setAgeMonths] = useState(0);
     const [ageGroup, setAgeGroup] = useState<AgeGroup>('19-59');
-    const [bmi, setBmi] = useState<number | null>(null);
+
+    // BMI is derived from formData
+    const bmi = formData.bmi ?? null;
+
+    // Calculate criteria based on weight/height
+    const getCriteriaUpdates = (weight: number, height: number) => {
+        const calculatedBmi = calculateBMI(weight, height);
+        if (ageGroup === '0-5' || ageGroup === '6-14') {
+            const gender = resident?.gender || 'male';
+            return {
+                bmi: calculatedBmi,
+                weight_criteria: getWeightCriteria(weight, ageMonths, gender),
+                height_criteria: getHeightCriteria(height, ageMonths, gender),
+                weight_for_height: getWeightForHeightCriteria(weight, height, gender)
+            };
+        }
+        return { bmi: calculatedBmi };
+    };
 
     useEffect(() => {
         async function loadData() {
@@ -69,7 +85,6 @@ export default function SurveyPage() {
             }
 
             setResident(r);
-            setHouse(h);
 
             const calculatedAge = calculateAge(r.birth_date);
             const calculatedAgeMonths = calculateAgeInMonths(r.birth_date);
@@ -96,36 +111,16 @@ export default function SurveyPage() {
         loadData();
     }, [residentId, houseId, router]);
 
-    // Auto-calculate BMI and criteria when weight/height changes
-    useEffect(() => {
-        if (formData.weight && formData.height) {
-            const calculatedBmi = calculateBMI(formData.weight, formData.height);
-            setBmi(calculatedBmi);
-
-            // Auto-calculate criteria for children
-            if (ageGroup === '0-5' || ageGroup === '6-14') {
-                const gender = resident?.gender || 'male';
-                setFormData(prev => ({
-                    ...prev,
-                    bmi: calculatedBmi,
-                    weight_criteria: getWeightCriteria(formData.weight!, ageMonths, gender),
-                    height_criteria: getHeightCriteria(formData.height!, ageMonths, gender),
-                    weight_for_height: getWeightForHeightCriteria(formData.weight!, formData.height!, gender)
-                }));
-            } else {
-                setFormData(prev => ({
-                    ...prev,
-                    bmi: calculatedBmi
-                }));
-            }
-        }
-    }, [formData.weight, formData.height, ageGroup, ageMonths, resident?.gender]);
-
     const handleInputChange = (field: string, value: unknown) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
+        setFormData(prev => {
+            const updated = { ...prev, [field]: value };
+            // Auto-calculate criteria when weight or height changes
+            if ((field === 'weight' || field === 'height') && updated.weight && updated.height) {
+                const criteriaUpdates = getCriteriaUpdates(updated.weight, updated.height);
+                return { ...updated, ...criteriaUpdates };
+            }
+            return updated;
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

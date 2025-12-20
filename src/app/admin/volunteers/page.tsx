@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -21,20 +21,23 @@ export default function AdminVolunteers() {
     const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null);
     const [formData, setFormData] = useState({ national_id: '', name: '', phone: '', village_no: 6 });
     const router = useRouter();
+    const loadDataRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
     useEffect(() => {
+        const loadVolunteers = async () => {
+            const { data } = await supabase.from('volunteers').select('*').order('name');
+            setVolunteers(data || []);
+            setLoading(false);
+        };
+
+        loadDataRef.current = loadVolunteers;
+
         if (typeof window !== 'undefined' && !localStorage.getItem('adminLoggedIn')) {
             router.push('/admin');
             return;
         }
         loadVolunteers();
     }, [router]);
-
-    async function loadVolunteers() {
-        const { data } = await supabase.from('volunteers').select('*').order('name');
-        setVolunteers(data || []);
-        setLoading(false);
-    }
 
     const filteredVolunteers = volunteers.filter(v =>
         v.name.includes(searchQuery) || v.national_id.includes(searchQuery)
@@ -51,7 +54,7 @@ export default function AdminVolunteers() {
         if (!error) {
             setShowAddModal(false);
             setFormData({ national_id: '', name: '', phone: '', village_no: 6 });
-            loadVolunteers();
+            loadDataRef.current?.();
         }
     };
 
@@ -62,14 +65,14 @@ export default function AdminVolunteers() {
             .eq('id', editingVolunteer.id);
         if (!error) {
             setEditingVolunteer(null);
-            loadVolunteers();
+            loadDataRef.current?.();
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('ยืนยันการลบ?')) return;
         await supabase.from('volunteers').delete().eq('id', id);
-        loadVolunteers();
+        loadDataRef.current?.();
     };
 
     if (loading) {

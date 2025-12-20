@@ -78,7 +78,8 @@ export default function HouseMap({ houses }: HouseMapProps) {
 
         houses.forEach(house => {
             // Skip houses without valid GPS coordinates
-            if (!house.latitude || !house.longitude || (house.latitude === 0 && house.longitude === 0)) {
+            // Skip if lat/lng is missing, null, undefined, or zero
+            if (!house.latitude || !house.longitude || house.latitude === 0 || house.longitude === 0) {
                 return;
             }
 
@@ -88,7 +89,6 @@ export default function HouseMap({ houses }: HouseMapProps) {
             const allSurveyed = house.surveyedCount === house.totalResidents && house.totalResidents > 0;
             const allPassed = allSurveyed && house.residents.every(r => r.status === 'passed');
             const isPartial = house.surveyedCount > 0 && house.surveyedCount < house.totalResidents;
-            const notSurveyed = house.surveyedCount === 0;
 
             let icon = grayIcon;
             let markerStatus = 'not_surveyed';

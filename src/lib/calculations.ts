@@ -171,7 +171,7 @@ export function getHeightCriteria(
 export function getWeightForHeightCriteria(
     weight: number,
     height: number,
-    gender: 'male' | 'female'
+    _gender: 'male' | 'female'
 ): 'normal' | 'underweight' | 'overweight' {
     // ใช้ BMI-for-age สำหรับความง่าย
     const bmi = calculateBMI(weight, height);

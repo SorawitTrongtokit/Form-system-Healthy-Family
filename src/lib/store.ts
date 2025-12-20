@@ -5,6 +5,46 @@ import { supabase } from './supabase';
 import { Volunteer, House, Resident, HealthRecord, HouseWithStats, ResidentWithAge } from './types';
 import { calculateAge, getAgeGroup } from './calculations';
 
+// Helper function to fetch all rows using pagination (Supabase limits to 1000 rows per request)
+async function fetchAllRows<T>(
+    tableName: string,
+    selectFields: string = '*',
+    orderBy?: string
+): Promise<T[]> {
+    const PAGE_SIZE = 1000;
+    let allData: T[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+        let query = supabase
+            .from(tableName)
+            .select(selectFields)
+            .range(from, from + PAGE_SIZE - 1);
+
+        if (orderBy) {
+            query = query.order(orderBy);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error(`Error fetching ${tableName}:`, error);
+            break;
+        }
+
+        if (data && data.length > 0) {
+            allData = [...allData, ...(data as T[])];
+            from += PAGE_SIZE;
+            hasMore = data.length === PAGE_SIZE;
+        } else {
+            hasMore = false;
+        }
+    }
+
+    return allData;
+}
+
 // Current logged-in volunteer (cached locally)
 let currentVolunteer: Volunteer | null = null;
 
@@ -151,7 +191,7 @@ export async function getHouseByIdAsync(houseId: string): Promise<House | null> 
     return data as House;
 }
 
-export function getHouseById(houseId: string): House | undefined {
+export function getHouseById(_houseId: string): House | undefined {
     return undefined;
 }
 
@@ -186,7 +226,7 @@ export async function getResidentsByHouseIdAsync(houseId: string): Promise<Resid
     });
 }
 
-export function getResidentsByHouseId(houseId: string): ResidentWithAge[] {
+export function getResidentsByHouseId(_houseId: string): ResidentWithAge[] {
     return [];
 }
 
@@ -201,7 +241,7 @@ export async function getResidentByIdAsync(residentId: string): Promise<Resident
     return data as Resident;
 }
 
-export function getResidentById(residentId: string): Resident | undefined {
+export function getResidentById(_residentId: string): Resident | undefined {
     return undefined;
 }
 
@@ -235,7 +275,7 @@ export async function getHealthRecordAsync(residentId: string): Promise<HealthRe
     return data as HealthRecord;
 }
 
-export function getHealthRecord(residentId: string): HealthRecord | undefined {
+export function getHealthRecord(_residentId: string): HealthRecord | undefined {
     return undefined;
 }
 
@@ -296,18 +336,11 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStatsAsync(): Promise<DashboardStats> {
-    // Fetch all residents
-    const { data: residents } = await supabase
-        .from('residents')
-        .select('id, birth_date');
+    // Fetch all residents using pagination
+    const allResidents = await fetchAllRows<{ id: string; birth_date: string }>('residents', 'id, birth_date');
 
-    // Fetch all health records
-    const { data: records } = await supabase
-        .from('health_records')
-        .select('*');
-
-    const allResidents = residents || [];
-    const allRecords = records || [];
+    // Fetch all health records using pagination
+    const allRecords = await fetchAllRows<HealthRecord>('health_records', '*');
 
     const totalResidents = allResidents.length;
     const surveyedCount = allRecords.length;
@@ -374,25 +407,36 @@ export interface HouseMapData {
 }
 
 export async function getHouseMapDataAsync(): Promise<HouseMapData[]> {
-    // Fetch all houses
-    const { data: houses } = await supabase
-        .from('houses')
-        .select('*');
+    // Fetch all data using pagination to overcome 1000 row limit
+    interface HouseRow {
+        id: string;
+        house_number: string;
+        village_no: number;
+        latitude?: number;
+        longitude?: number;
+        volunteer_id: string;
+    }
+    interface ResidentRow {
+        id: string;
+        house_id: string;
+        prefix: string;
+        first_name: string;
+        last_name: string;
+        relationship: string;
+    }
+    interface RecordRow {
+        resident_id: string;
+        passed_criteria: boolean | null;
+    }
 
-    // Fetch all residents
-    const { data: residents } = await supabase
-        .from('residents')
-        .select('id, house_id, prefix, first_name, last_name, relationship');
+    const houses = await fetchAllRows<HouseRow>('houses', '*');
+    const residents = await fetchAllRows<ResidentRow>('residents', 'id, house_id, prefix, first_name, last_name, relationship');
+    const records = await fetchAllRows<RecordRow>('health_records', 'resident_id, passed_criteria');
 
-    // Fetch health records with passed_criteria
-    const { data: records } = await supabase
-        .from('health_records')
-        .select('resident_id, passed_criteria');
+    if (!houses || houses.length === 0) return [];
 
-    if (!houses) return [];
-
-    const residentsByHouse = new Map<string, typeof residents>();
-    (residents || []).forEach(r => {
+    const residentsByHouse = new Map<string, ResidentRow[]>();
+    residents.forEach(r => {
         const list = residentsByHouse.get(r.house_id) || [];
         list.push(r);
         residentsByHouse.set(r.house_id, list);
@@ -449,8 +493,8 @@ export async function getHouseMapDataAsync(): Promise<HouseMapData[]> {
             id: house.id,
             houseNumber: house.house_number,
             villageNo: house.village_no,
-            latitude: house.latitude || (15.05 + Math.random() * 0.02),
-            longitude: house.longitude || (100.48 + Math.random() * 0.02),
+            latitude: house.latitude || 0,
+            longitude: house.longitude || 0,
             totalResidents,
             surveyedCount,
             status,

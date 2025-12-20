@@ -1,15 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 export default function LandingPage() {
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        setIsVisible(true);
-    }, []);
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-600">
             {/* Hero Section */}
@@ -26,7 +20,7 @@ export default function LandingPage() {
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden">
-                                <img src="/logo.jpg" alt="รพ.สต.มะตูม" className="w-full h-full object-cover" />
+                                <Image src="/logo.jpg" alt="รพ.สต.มะตูม" width={48} height={48} className="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <h1 className="text-white font-bold text-xl">รพ.สต.มะตูม</h1>
@@ -43,7 +37,7 @@ export default function LandingPage() {
                 </nav>
 
                 {/* Hero Content */}
-                <div className={`relative z-10 container mx-auto px-6 py-20 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className="relative z-10 container mx-auto px-6 py-20 text-center animate-fade-in">
                     <div className="inline-block mb-6 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
                         <span className="text-white text-sm font-medium">🏥 ระบบสาธารณสุขชุมชน ตำบลมะตูม</span>
                     </div>

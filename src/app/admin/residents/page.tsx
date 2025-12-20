@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -36,24 +36,27 @@ export default function AdminResidents() {
         birth_date: '', gender: 'male', house_id: '', relationship: 'สมาชิก'
     });
     const router = useRouter();
+    const loadDataRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
     useEffect(() => {
+        const loadData = async () => {
+            const [residentsRes, housesRes] = await Promise.all([
+                supabase.from('residents').select('*').order('first_name').limit(5000),
+                supabase.from('houses').select('id, house_number, village_no').limit(2000)
+            ]);
+            setResidents(residentsRes.data || []);
+            setHouses(housesRes.data || []);
+            setLoading(false);
+        };
+
+        loadDataRef.current = loadData;
+
         if (typeof window !== 'undefined' && !localStorage.getItem('adminLoggedIn')) {
             router.push('/admin');
             return;
         }
         loadData();
     }, [router]);
-
-    async function loadData() {
-        const [residentsRes, housesRes] = await Promise.all([
-            supabase.from('residents').select('*').order('first_name'),
-            supabase.from('houses').select('id, house_number, village_no')
-        ]);
-        setResidents(residentsRes.data || []);
-        setHouses(housesRes.data || []);
-        setLoading(false);
-    }
 
     const filteredResidents = residents.filter(r =>
         `${r.first_name} ${r.last_name}`.includes(searchQuery) ||
@@ -68,7 +71,7 @@ export default function AdminResidents() {
         if (!error) {
             setShowAddModal(false);
             setFormData({ national_id: '', prefix: 'นาย', first_name: '', last_name: '', birth_date: '', gender: 'male', house_id: '', relationship: 'สมาชิก' });
-            loadData();
+            loadDataRef.current?.();
         }
     };
 
@@ -79,7 +82,7 @@ export default function AdminResidents() {
             .eq('id', editingResident.id);
         if (!error) {
             setEditingResident(null);
-            loadData();
+            loadDataRef.current?.();
         }
     };
 
@@ -87,7 +90,7 @@ export default function AdminResidents() {
         if (!confirm('ยืนยันการลบ?')) return;
         await supabase.from('health_records').delete().eq('resident_id', id);
         await supabase.from('residents').delete().eq('id', id);
-        loadData();
+        loadDataRef.current?.();
     };
 
     const getHouseLabel = (houseId: string) => {

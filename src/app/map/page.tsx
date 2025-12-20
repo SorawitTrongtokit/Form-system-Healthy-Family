@@ -92,6 +92,15 @@ export default function MapPage() {
     const totalResidents = houseData.reduce((sum, h) => sum + h.totalResidents, 0);
     const totalSurveyed = houseData.reduce((sum, h) => sum + h.surveyedCount, 0);
 
+    // Health status counts
+    const allPassedHouses = houseData.filter(h => {
+        const allSurveyed = h.surveyedCount === h.totalResidents && h.totalResidents > 0;
+        return allSurveyed && h.residents.every(r => r.status === 'passed');
+    }).length;
+    const hasFailedHouses = houseData.filter(h =>
+        h.residents.some(r => r.status === 'failed')
+    ).length;
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -115,7 +124,7 @@ export default function MapPage() {
                 {/* Stats Summary */}
                 <div className="card p-6 mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4">📊 สรุปหลังคาเรือน</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         <div className="text-center p-4 bg-teal-50 rounded-lg">
                             <div className="text-2xl font-bold text-teal-600">{houseData.length}</div>
                             <div className="text-sm text-teal-700">🏠 หลังคาเรือน</div>
@@ -124,17 +133,27 @@ export default function MapPage() {
                             <div className="text-2xl font-bold text-blue-600">{totalResidents}</div>
                             <div className="text-sm text-blue-700">👥 ประชากร</div>
                         </div>
-                        <div className="text-center p-4 bg-green-50 rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">{complete}</div>
-                            <div className="text-sm text-green-700">✅ สำรวจครบ</div>
+                        <div className="text-center p-4 bg-green-50 rounded-lg border-2 border-green-300">
+                            <div className="text-2xl font-bold text-green-600">{allPassedHouses}</div>
+                            <div className="text-sm text-green-700">✅ ผ่านเกณฑ์ทุกคน</div>
                         </div>
-                        <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                            <div className="text-2xl font-bold text-yellow-600">{partial}</div>
-                            <div className="text-sm text-yellow-700">🟡 บางส่วน</div>
+                        <div className="text-center p-4 bg-red-50 rounded-lg border-2 border-red-300">
+                            <div className="text-2xl font-bold text-red-600">{hasFailedHouses}</div>
+                            <div className="text-sm text-red-700">🔴 มีคนไม่ผ่าน</div>
                         </div>
-                        <div className="text-center p-4 bg-gray-100 rounded-lg">
-                            <div className="text-2xl font-bold text-gray-600">{notSurveyed}</div>
-                            <div className="text-sm text-gray-700">⚪ ยังไม่สำรวจ</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 bg-green-50 rounded-lg">
+                            <div className="text-xl font-bold text-green-600">{complete}</div>
+                            <div className="text-xs text-green-700">สำรวจครบ</div>
+                        </div>
+                        <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                            <div className="text-xl font-bold text-yellow-600">{partial}</div>
+                            <div className="text-xs text-yellow-700">บางส่วน</div>
+                        </div>
+                        <div className="text-center p-3 bg-gray-100 rounded-lg">
+                            <div className="text-xl font-bold text-gray-600">{notSurveyed}</div>
+                            <div className="text-xs text-gray-700">ยังไม่สำรวจ</div>
                         </div>
                     </div>
                     {/* Progress */}

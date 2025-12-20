@@ -24,12 +24,7 @@
   --color-info: var(--info);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-  }
-}
+/* Force light mode always */
 
 * {
   box-sizing: border-box;

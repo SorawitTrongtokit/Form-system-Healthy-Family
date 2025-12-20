@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
                     {/* Progress bar */}
                     <div className="mt-6">
-                        <div className="flex justify-between text-sm mb-2">
+                        <div className="flex justify-between text-sm text-white mb-2">
                             <span>ความคืบหน้าการสำรวจ</span>
                             <span>{stats.surveyedCount}/{stats.totalResidents} คน</span>
                         </div>
@@ -188,16 +188,26 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Quick Links */}
-                <div className="grid-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Link href="/volunteer" className="card p-6 text-center hover:bg-teal-50 transition-colors">
                         <div className="text-4xl mb-2">📋</div>
                         <h4 className="font-bold text-gray-800">กลับไปสำรวจ</h4>
-                        <p className="text-sm text-gray-500">เลือกบ้านและบุคคลที่จะสำรวจ</p>
+                        <p className="text-sm text-gray-500">เลือกบ้านที่จะสำรวจ</p>
                     </Link>
                     <Link href="/map" className="card p-6 text-center hover:bg-teal-50 transition-colors">
                         <div className="text-4xl mb-2">🗺️</div>
                         <h4 className="font-bold text-gray-800">ดูแผนที่</h4>
-                        <p className="text-sm text-gray-500">แสดงแผนที่หลังคาเรือน</p>
+                        <p className="text-sm text-gray-500">แผนที่หลังคาเรือน</p>
+                    </Link>
+                    <Link href="/export" className="card p-6 text-center hover:bg-green-50 transition-colors">
+                        <div className="text-4xl mb-2">📥</div>
+                        <h4 className="font-bold text-gray-800">Export ข้อมูล</h4>
+                        <p className="text-sm text-gray-500">ดาวน์โหลด Excel</p>
+                    </Link>
+                    <Link href="/admin" className="card p-6 text-center hover:bg-purple-50 transition-colors">
+                        <div className="text-4xl mb-2">⚙️</div>
+                        <h4 className="font-bold text-gray-800">Admin</h4>
+                        <p className="text-sm text-gray-500">จัดการระบบ</p>
                     </Link>
                 </div>
             </main>

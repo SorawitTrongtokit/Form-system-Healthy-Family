@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏥 ระบบแบบฟอร์มครอบครัวสุขภาพดี
 
-## Getting Started
+**รพ.สต.มะตูม** - Progressive Web Application (PWA) สำหรับจัดเก็บและบริหารข้อมูลสุขภาพชุมชน
 
-First, run the development server:
+[![Next.js](https://img.shields.io/badge/Next.js-16.1-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-green?logo=supabase)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+
+---
+
+## 📋 ฟีเจอร์หลัก
+
+### 👨‍⚕️ สำหรับอาสาสมัคร (อสม.)
+
+- 🔐 เข้าสู่ระบบด้วยเลขบัตรประชาชน
+- 🏠 ดูรายการบ้านในความรับผิดชอบ
+- 📝 กรอกแบบสำรวจสุขภาพตามกลุ่มอายุ
+- 📍 บันทึกพิกัด GPS บ้าน
+- 📊 ดูความคืบหน้าการสำรวจ
+
+### 📊 Dashboard & รายงาน
+
+- สถิติภาพรวมประชากรและการสำรวจ
+- แยกตามกลุ่มอายุ (0-5, 6-14, 15-18, 19-59, 60+)
+- แผนที่แสดงบ้านทั้งหมดพร้อมสถานะสุขภาพ
+- ค้นหาบ้านด้วยเลขที่บ้านหรือชื่อ
+
+### 📥 Export ข้อมูล
+
+- ดาวน์โหลดข้อมูลประชากร (Excel)
+- ดาวน์โหลดผลสำรวจสุขภาพ (Excel)
+- ดาวน์โหลดสรุปสถิติ (Excel)
+- รวมทุกรายงานในไฟล์เดียว
+
+### ⚙️ ระบบ Admin
+
+- จัดการอาสาสมัคร (CRUD)
+- จัดการบ้าน (CRUD)
+- จัดการประชากร (CRUD)
+- ดูรายงานและสถิติ
+
+---
+
+## 🎯 กลุ่มอายุและเกณฑ์สุขภาพ
+
+| กลุ่มอายุ | เกณฑ์ที่ประเมิน |
+|----------|----------------|
+| 0-5 ปี | น้ำหนัก/ส่วนสูง, การฉีดวัคซีน, พัฒนาการ, ธาตุเหล็ก |
+| 6-14 ปี | น้ำหนัก/ส่วนสูง, การฉีดวัคซีน, พัฒนาการ, สุขภาพช่องปาก |
+| 15-18 ปี | การดื่มแอลกอฮอล์, บุหรี่, สารเสพติด |
+| 19-59 ปี | เบาหวาน, ความดันโลหิตสูง |
+| 60+ ปี | เบาหวาน, ความดันโลหิตสูง, การดูแลตนเอง |
+
+---
+
+## 🛠️ เทคโนโลยี
+
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Database:** Supabase (PostgreSQL)
+- **Maps:** Leaflet.js + React-Leaflet
+- **Export:** xlsx library
+- **Icons:** Emoji + Lucide React
+
+---
+
+## 🚀 การติดตั้ง
+
+### 1. Clone โปรเจกต์
+
+```bash
+git clone https://github.com/SorawitTrongtokit/Form-system-Healthy-Family.git
+cd Form-system-Healthy-Family
+```
+
+### 2. ติดตั้ง Dependencies
+
+```bash
+npm install
+```
+
+### 3. ตั้งค่า Environment Variables
+
+สร้างไฟล์ `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4. รันโปรเจกต์
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+เปิด [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 โครงสร้างโปรเจกต์
 
-## Learn More
+```
+src/
+├── app/
+│   ├── admin/           # ระบบ Admin
+│   │   ├── dashboard/   # Admin Dashboard
+│   │   ├── volunteers/  # จัดการอาสาสมัคร
+│   │   ├── houses/      # จัดการบ้าน
+│   │   └── residents/   # จัดการประชากร
+│   ├── dashboard/       # Dashboard สถิติ
+│   ├── export/          # Export ข้อมูล Excel
+│   ├── login/           # หน้า Login
+│   ├── map/             # แผนที่บ้าน
+│   ├── survey/          # แบบฟอร์มสำรวจ
+│   └── volunteer/       # หน้าอาสาสมัคร
+├── components/
+│   └── HouseMap.tsx     # Component แผนที่
+└── lib/
+    ├── calculations.ts  # คำนวณเกณฑ์สุขภาพ
+    ├── store.ts         # Data store functions
+    ├── supabase.ts      # Supabase client
+    ├── types.ts         # TypeScript types
+    └── validation.ts    # Validation utilities
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔐 การเข้าใช้งาน
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### อาสาสมัคร
 
-## Deploy on Vercel
+- เข้าที่ `/login`
+- ใช้เลขบัตรประชาชน 13 หลัก
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Admin
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- เข้าที่ `/admin`
+- Username: `admin`
+- Password: `admin123`
+
+---
+
+## 📱 PWA Support
+
+แอปรองรับการติดตั้งบนมือถือ:
+
+1. เปิดเว็บไซต์บน Chrome/Safari
+2. กด "Add to Home Screen"
+3. ใช้งานได้เหมือนแอปปกติ
+
+---
+
+## 📄 License
+
+MIT License © 2024 รพ.สต.มะตูม
+
+---
+
+## 👨‍💻 พัฒนาโดย
+
+ระบบนี้พัฒนาขึ้นเพื่อสนับสนุนการทำงานของอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.) ในการจัดเก็บและบริหารข้อมูลสุขภาพชุมชน

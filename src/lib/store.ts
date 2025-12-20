@@ -351,66 +351,116 @@ export function getDashboardStats(): DashboardStats {
     };
 }
 
-// ==================== ELDERLY MAP ====================
+// ==================== HOUSE MAP ====================
 
-export interface ElderlyMapData {
+export interface ResidentMapInfo {
     id: string;
     name: string;
-    age: number;
-    latitude: number;
-    longitude: number;
+    relationship: string;
     status: 'passed' | 'failed' | 'other' | 'not_surveyed';
-    houseNumber: string;
-    villageNo: number;
 }
 
-export async function getElderlyMapDataAsync(): Promise<ElderlyMapData[]> {
-    // Fetch all residents with house data
+export interface HouseMapData {
+    id: string;
+    houseNumber: string;
+    villageNo: number;
+    latitude: number;
+    longitude: number;
+    totalResidents: number;
+    surveyedCount: number;
+    status: 'complete' | 'partial' | 'not_surveyed';
+    headOfHouse: string;
+    residents: ResidentMapInfo[];
+}
+
+export async function getHouseMapDataAsync(): Promise<HouseMapData[]> {
+    // Fetch all houses
+    const { data: houses } = await supabase
+        .from('houses')
+        .select('*');
+
+    // Fetch all residents
     const { data: residents } = await supabase
         .from('residents')
-        .select('*, houses(*)');
+        .select('id, house_id, prefix, first_name, last_name, relationship');
 
-    // Fetch health records
+    // Fetch health records with passed_criteria
     const { data: records } = await supabase
         .from('health_records')
         .select('resident_id, passed_criteria');
 
-    if (!residents) return [];
+    if (!houses) return [];
 
-    const recordMap = new Map((records || []).map(r => [r.resident_id, r]));
-
-    // Filter elderly (60+)
-    const elderly = residents.filter(r => {
-        const age = calculateAge(r.birth_date);
-        return age >= 60;
+    const residentsByHouse = new Map<string, typeof residents>();
+    (residents || []).forEach(r => {
+        const list = residentsByHouse.get(r.house_id) || [];
+        list.push(r);
+        residentsByHouse.set(r.house_id, list);
     });
 
-    return elderly.map(person => {
-        const house = person.houses as House | null;
-        const record = recordMap.get(person.id);
-        const age = calculateAge(person.birth_date);
+    // Create a map of resident_id to passed_criteria
+    const recordMap = new Map<string, boolean | null>();
+    (records || []).forEach(r => {
+        recordMap.set(r.resident_id, r.passed_criteria);
+    });
 
-        let status: 'passed' | 'failed' | 'other' | 'not_surveyed' = 'not_surveyed';
-        if (record) {
-            if (record.passed_criteria === true) status = 'passed';
-            else if (record.passed_criteria === false) status = 'failed';
-            else status = 'other';
+    return houses.map(house => {
+        const houseResidents = residentsByHouse.get(house.id) || [];
+        const totalResidents = houseResidents.length;
+        const surveyedCount = houseResidents.filter(r => recordMap.has(r.id)).length;
+
+        let status: 'complete' | 'partial' | 'not_surveyed' = 'not_surveyed';
+        if (surveyedCount === 0) {
+            status = 'not_surveyed';
+        } else if (surveyedCount < totalResidents) {
+            status = 'partial';
+        } else {
+            status = 'complete';
         }
 
+        // Find head of house
+        const head = houseResidents.find(r => r.relationship === 'เจ้าบ้าน');
+        const headOfHouse = head
+            ? `${head.prefix}${head.first_name} ${head.last_name}`
+            : (houseResidents[0] ? `${houseResidents[0].prefix}${houseResidents[0].first_name} ${houseResidents[0].last_name}` : 'ไม่ระบุ');
+
+        // Build residents list with detailed status
+        const residentsList: ResidentMapInfo[] = houseResidents.map(r => {
+            let residentStatus: 'passed' | 'failed' | 'other' | 'not_surveyed' = 'not_surveyed';
+            if (recordMap.has(r.id)) {
+                const passedCriteria = recordMap.get(r.id);
+                if (passedCriteria === true) {
+                    residentStatus = 'passed';
+                } else if (passedCriteria === false) {
+                    residentStatus = 'failed';
+                } else {
+                    residentStatus = 'other';
+                }
+            }
+            return {
+                id: r.id,
+                name: `${r.prefix}${r.first_name} ${r.last_name}`,
+                relationship: r.relationship,
+                status: residentStatus
+            };
+        });
+
         return {
-            id: person.id,
-            name: `${person.prefix}${person.first_name} ${person.last_name}`,
-            age,
-            latitude: house?.latitude || 15.05 + (Math.random() * 0.01),
-            longitude: house?.longitude || 100.48 + (Math.random() * 0.01),
+            id: house.id,
+            houseNumber: house.house_number,
+            villageNo: house.village_no,
+            latitude: house.latitude || (15.05 + Math.random() * 0.02),
+            longitude: house.longitude || (100.48 + Math.random() * 0.02),
+            totalResidents,
+            surveyedCount,
             status,
-            houseNumber: house?.house_number || '',
-            villageNo: house?.village_no || 6
+            headOfHouse,
+            residents: residentsList
         };
     });
 }
 
-export function getElderlyMapData(): ElderlyMapData[] {
+export function getHouseMapData(): HouseMapData[] {
     return [];
 }
 

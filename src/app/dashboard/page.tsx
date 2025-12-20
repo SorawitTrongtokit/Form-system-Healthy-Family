@@ -197,7 +197,7 @@ export default function DashboardPage() {
                     <Link href="/map" className="card p-6 text-center hover:bg-teal-50 transition-colors">
                         <div className="text-4xl mb-2">🗺️</div>
                         <h4 className="font-bold text-gray-800">ดูแผนที่</h4>
-                        <p className="text-sm text-gray-500">แสดงตำแหน่งผู้สูงอายุ 60+</p>
+                        <p className="text-sm text-gray-500">แสดงแผนที่หลังคาเรือน</p>
                     </Link>
                 </div>
             </main>

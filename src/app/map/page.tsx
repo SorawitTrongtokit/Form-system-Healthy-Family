@@ -183,8 +183,12 @@ export default function MapPage() {
                             <span className="text-sm text-gray-700">มีคนไม่ผ่านเกณฑ์</span>
                         </div>
                         <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-yellow-500 rounded-full border-2 border-white shadow"></div>
+                            <span className="text-sm text-gray-700">สำรวจบางส่วน</span>
+                        </div>
+                        <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-gray-400 rounded-full border-2 border-white shadow"></div>
-                            <span className="text-sm text-gray-700">สำรวจยังไม่ครบ</span>
+                            <span className="text-sm text-gray-700">ยังไม่สำรวจ</span>
                         </div>
                     </div>
                 </div>

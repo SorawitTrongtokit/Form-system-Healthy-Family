@@ -44,7 +44,8 @@ const createMarkerIcon = (color: string) => {
 
 const greenIcon = createMarkerIcon('#22c55e');   // All passed
 const redIcon = createMarkerIcon('#ef4444');     // Has failed
-const grayIcon = createMarkerIcon('#9ca3af');    // Not complete
+const yellowIcon = createMarkerIcon('#eab308');  // Partial survey
+const grayIcon = createMarkerIcon('#9ca3af');    // Not surveyed
 
 // Status colors for residents
 const getResidentStatusColor = (status: string) => {
@@ -76,27 +77,39 @@ export default function HouseMap({ houses }: HouseMapProps) {
         const markers: L.Marker[] = [];
 
         houses.forEach(house => {
+            // Skip houses without valid GPS coordinates
+            if (!house.latitude || !house.longitude || (house.latitude === 0 && house.longitude === 0)) {
+                return;
+            }
+
             // Determine marker color based on health status
-            // Red: any failed, Green: all passed, Gray: not all surveyed
+            // Red: any failed, Green: all passed, Yellow: partial, Gray: not surveyed
             const hasAnyFailed = house.residents.some(r => r.status === 'failed');
             const allSurveyed = house.surveyedCount === house.totalResidents && house.totalResidents > 0;
             const allPassed = allSurveyed && house.residents.every(r => r.status === 'passed');
+            const isPartial = house.surveyedCount > 0 && house.surveyedCount < house.totalResidents;
+            const notSurveyed = house.surveyedCount === 0;
 
             let icon = grayIcon;
-            let markerStatus = 'incomplete';
+            let markerStatus = 'not_surveyed';
             if (hasAnyFailed) {
                 icon = redIcon;
                 markerStatus = 'failed';
             } else if (allPassed) {
                 icon = greenIcon;
                 markerStatus = 'passed';
+            } else if (isPartial) {
+                icon = yellowIcon;
+                markerStatus = 'partial';
             }
 
             const statusText = markerStatus === 'failed' ? '🔴 มีคนไม่ผ่านเกณฑ์' :
-                markerStatus === 'passed' ? '✅ ผ่านเกณฑ์ทุกคน' : '⚪ สำรวจยังไม่ครบ';
+                markerStatus === 'passed' ? '✅ ผ่านเกณฑ์ทุกคน' :
+                    markerStatus === 'partial' ? '🟡 สำรวจบางส่วน' : '⚪ ยังไม่สำรวจ';
 
             const statusBgColor = markerStatus === 'failed' ? '#fee2e2' :
-                markerStatus === 'passed' ? '#dcfce7' : '#f3f4f6';
+                markerStatus === 'passed' ? '#dcfce7' :
+                    markerStatus === 'partial' ? '#fef9c3' : '#f3f4f6';
 
             // Build residents list HTML with colored status
             const residentsHtml = house.residents.map(r => `

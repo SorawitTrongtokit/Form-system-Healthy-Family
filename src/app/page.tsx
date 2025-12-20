@@ -1,9 +1,45 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 export default function LandingPage() {
+    const [stats, setStats] = useState({
+        volunteers: 0,
+        houses: 0,
+        residents: 0,
+        healthRecords: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadStats = async () => {
+            try {
+                const [volunteersRes, housesRes, residentsRes, healthRes] = await Promise.all([
+                    supabase.from('volunteers').select('id', { count: 'exact', head: true }),
+                    supabase.from('houses').select('id', { count: 'exact', head: true }),
+                    supabase.from('residents').select('id', { count: 'exact', head: true }),
+                    supabase.from('health_records').select('id', { count: 'exact', head: true })
+                ]);
+
+                setStats({
+                    volunteers: volunteersRes.count || 0,
+                    houses: housesRes.count || 0,
+                    residents: residentsRes.count || 0,
+                    healthRecords: healthRes.count || 0
+                });
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadStats();
+    }, []);
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-600">
             {/* Hero Section */}
@@ -68,24 +104,32 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                {/* Stats */}
+                {/* Stats - Real-time from database */}
                 <div className="relative z-10 container mx-auto px-6 pb-20">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                            <div className="text-4xl font-bold text-white">13</div>
+                            <div className="text-4xl font-bold text-white">
+                                {loading ? '...' : stats.volunteers.toLocaleString()}
+                            </div>
                             <div className="text-white/80 text-sm mt-2">👤 อาสาสมัคร</div>
                         </div>
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                            <div className="text-4xl font-bold text-white">135</div>
+                            <div className="text-4xl font-bold text-white">
+                                {loading ? '...' : stats.houses.toLocaleString()}
+                            </div>
                             <div className="text-white/80 text-sm mt-2">🏠 หลังคาเรือน</div>
                         </div>
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                            <div className="text-4xl font-bold text-white">336</div>
+                            <div className="text-4xl font-bold text-white">
+                                {loading ? '...' : stats.residents.toLocaleString()}
+                            </div>
                             <div className="text-white/80 text-sm mt-2">👥 ประชากร</div>
                         </div>
                         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                            <div className="text-4xl font-bold text-white">5</div>
-                            <div className="text-white/80 text-sm mt-2">📋 กลุ่มวัย</div>
+                            <div className="text-4xl font-bold text-white">
+                                {loading ? '...' : stats.healthRecords.toLocaleString()}
+                            </div>
+                            <div className="text-white/80 text-sm mt-2">📋 สำรวจแล้ว</div>
                         </div>
                     </div>
                 </div>

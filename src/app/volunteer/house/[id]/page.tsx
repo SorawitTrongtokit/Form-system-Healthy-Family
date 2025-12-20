@@ -157,10 +157,10 @@ export default function HouseDetailPage() {
                     <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <h4 className="font-bold text-gray-700 mb-2">📍 พิกัดบ้าน</h4>
                         {gps ? (
-                            <div className="flex justify-between items-center">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                                 <div className="text-green-700">
                                     <span className="font-medium">✅ บันทึกพิกัดแล้ว</span>
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-gray-500 mt-1 break-all">
                                         {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}
                                     </p>
                                 </div>
@@ -168,7 +168,7 @@ export default function HouseDetailPage() {
                                     type="button"
                                     onClick={handleGetGPS}
                                     disabled={gpsLoading}
-                                    className="btn btn-secondary text-sm py-2 px-3"
+                                    className="btn btn-secondary text-sm py-2 px-4 w-full sm:w-auto"
                                 >
                                     🔄 อัปเดต
                                 </button>
@@ -224,15 +224,20 @@ export default function HouseDetailPage() {
                                 href={`/survey/${resident.id}?houseId=${houseId}`}
                                 className={`block p-4 bg-white hover:bg-teal-50 rounded-lg border-2 border-gray-100 hover:border-teal-300 transition-all ${getAgeGroupClass(resident.age_group)}`}
                             >
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h4 className="font-bold text-gray-800">
-                                            {resident.prefix}{resident.first_name} {resident.last_name}
-                                        </h4>
+                                <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start sm:block">
+                                            <h4 className="font-bold text-gray-800">
+                                                {resident.prefix}{resident.first_name} {resident.last_name}
+                                            </h4>
+                                            <div className="sm:hidden">
+                                                {getStatusBadge(resident.has_record)}
+                                            </div>
+                                        </div>
                                         <p className="text-gray-600 text-sm">
                                             {resident.relationship}
                                         </p>
-                                        <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                                        <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
                                             <span>🎂 อายุ {resident.age} ปี</span>
                                             <span>📅 เกิด {formatThaiDate(resident.birth_date)}</span>
                                         </div>
@@ -247,13 +252,13 @@ export default function HouseDetailPage() {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        {getStatusBadge(resident.has_record)}
-                                        <div className="mt-3">
-                                            <span className="text-teal-600 text-sm font-medium">
-                                                กรอกแบบฟอร์ม →
-                                            </span>
+                                    <div className="flex justify-between items-center sm:block sm:text-right">
+                                        <div className="hidden sm:block">
+                                            {getStatusBadge(resident.has_record)}
                                         </div>
+                                        <span className="text-teal-600 text-sm font-medium">
+                                            กรอกแบบฟอร์ม →
+                                        </span>
                                     </div>
                                 </div>
                             </Link>

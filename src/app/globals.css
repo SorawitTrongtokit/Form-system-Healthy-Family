@@ -368,3 +368,212 @@ body {
   max-height: 90vh;
   overflow-y: auto;
 }
+
+/* =============================================== */
+/* MOBILE-SPECIFIC STYLES FOR VOLUNTEER PAGES     */
+/* =============================================== */
+
+@media (max-width: 640px) {
+
+  /* Larger container padding on mobile */
+  .container {
+    padding: 12px;
+  }
+
+  /* Header adjustments */
+  .nav-header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+
+  .nav-header>div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .nav-title {
+    font-size: 18px;
+  }
+
+  .nav-link {
+    padding: 10px 14px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+  }
+
+  /* Card adjustments */
+  .card {
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  /* Stat cards - 2 columns on mobile */
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 16px 12px;
+    border-radius: 12px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  /* Larger touch targets for buttons */
+  .btn {
+    padding: 16px 20px;
+    font-size: 16px;
+    min-height: 52px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+
+  /* Input fields - larger for mobile input */
+  .input {
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+
+  /* Form groups spacing */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  /* Radio options - stack vertically on small screens */
+  .radio-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .radio-option {
+    padding: 14px 16px;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Badge adjustments */
+  .badge {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  /* House list items - larger touch targets */
+  .space-y-3>a,
+  .space-y-3>div {
+    padding: 16px !important;
+  }
+
+  /* Map container smaller on mobile */
+  .map-container {
+    height: 350px;
+    border-radius: 12px;
+  }
+
+  /* Resident list cards */
+  .space-y-2>a,
+  .space-y-2>div {
+    padding: 14px !important;
+  }
+
+  /* Progress indicators section */
+  .text-sm {
+    font-size: 13px;
+  }
+
+  /* Make text more readable */
+  h2,
+  h3 {
+    font-size: 18px !important;
+  }
+
+  h4 {
+    font-size: 16px !important;
+  }
+
+  p,
+  span {
+    line-height: 1.5;
+  }
+
+  /* Survey form specific */
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Table adjustments for mobile */
+  table {
+    font-size: 13px;
+  }
+
+  table th,
+  table td {
+    padding: 10px 8px;
+  }
+
+  /* Modal fullscreen on mobile */
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  /* Fixed bottom action button for forms */
+  .fixed-bottom-btn {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    background: white;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+  }
+
+  /* Add padding to body to account for fixed bottom button */
+  body.has-fixed-btn {
+    padding-bottom: 80px;
+  }
+
+  /* Scroll snap for better experience */
+  .overflow-x-auto {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better tap highlighting */
+  button,
+  a,
+  .clickable {
+    -webkit-tap-highlight-color: rgba(13, 148, 136, 0.2);
+  }
+
+  /* Loading spinner smaller on mobile */
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+}

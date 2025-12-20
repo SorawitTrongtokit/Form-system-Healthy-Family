@@ -155,8 +155,17 @@ export default function AdminResidents() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('ยืนยันการลบประชากรนี้?')) return;
-        await supabase.from('residents').delete().eq('id', id);
+        if (!confirm('ยืนยันการลบประชากรนี้? (ข้อมูลสุขภาพที่เกี่ยวข้องจะถูกลบด้วย)')) return;
+
+        // First delete any health records for this resident
+        await supabase.from('health_records').delete().eq('resident_id', id);
+
+        // Then delete the resident
+        const { error } = await supabase.from('residents').delete().eq('id', id);
+        if (error) {
+            alert('ไม่สามารถลบได้: ' + error.message);
+            return;
+        }
         loadDataRef.current?.();
     };
 

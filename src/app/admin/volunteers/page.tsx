@@ -119,8 +119,22 @@ export default function AdminVolunteers() {
 
     const handleEdit = async () => {
         if (!editingVolunteer) return;
+
+        // Check if national_id is being changed and if it's already used
+        if (formData.national_id !== editingVolunteer.national_id) {
+            const existing = volunteers.find(v => v.national_id === formData.national_id && v.id !== editingVolunteer.id);
+            if (existing) {
+                alert(`เลขบัตรประชาชน ${formData.national_id} มีผู้ใช้อยู่แล้ว\nชื่อ: ${existing.name}`);
+                return;
+            }
+        }
+
         const { error } = await supabase.from('volunteers')
-            .update({ name: formData.name, phone: formData.phone || null })
+            .update({
+                national_id: formData.national_id,
+                name: formData.name,
+                phone: formData.phone || null
+            })
             .eq('id', editingVolunteer.id);
         if (error) {
             alert('เกิดข้อผิดพลาด: ' + error.message);
@@ -380,6 +394,11 @@ export default function AdminVolunteers() {
                                 </div>
                             </div>
                             <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">เลขบัตรประชาชน</label>
+                                    <input type="text" className="input w-full" title="เลขบัตรประชาชน" maxLength={13}
+                                        value={formData.national_id} onChange={(e) => setFormData({ ...formData, national_id: e.target.value })} />
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
                                     <input type="text" className="input w-full" title="ชื่อ-นามสกุล"

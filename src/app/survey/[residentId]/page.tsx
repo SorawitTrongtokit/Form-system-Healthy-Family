@@ -250,8 +250,8 @@ export default function SurveyPage() {
                         </div>
                     )}
 
-                    {/* Age 0-5 fields */}
-                    {(ageGroup === '0-5' || ageGroup === '6-14') && (
+                    {/* Age 0-5 fields ONLY */}
+                    {ageGroup === '0-5' && (
                         <>
                             {/* Auto-calculated criteria */}
                             {formData.weight_criteria && (
@@ -375,28 +375,52 @@ export default function SurveyPage() {
                         </>
                     )}
 
-                    {/* Age 6-14: Oral health */}
+                    {/* Age 6-14: Oral health + Iron pill */}
                     {ageGroup === '6-14' && (
-                        <div className="form-group">
-                            <label className="form-label">สุขภาพช่องปาก</label>
-                            <div className="space-y-2">
-                                {Object.entries(criteriaLabels.oral_health).map(([value, label]) => (
-                                    <label
-                                        key={value}
-                                        className={`radio-option ${formData.oral_health === value ? 'selected' : ''}`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="oral_health"
-                                            value={value}
-                                            checked={formData.oral_health === value}
-                                            onChange={(e) => handleInputChange('oral_health', e.target.value)}
-                                        />
-                                        {label}
-                                    </label>
-                                ))}
+                        <>
+                            <div className="form-group">
+                                <label className="form-label">สุขภาพช่องปาก</label>
+                                <div className="space-y-2">
+                                    {Object.entries(criteriaLabels.oral_health).map(([value, label]) => (
+                                        <label
+                                            key={value}
+                                            className={`radio-option ${formData.oral_health === value ? 'selected' : ''}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="oral_health"
+                                                value={value}
+                                                checked={formData.oral_health === value}
+                                                onChange={(e) => handleInputChange('oral_health', e.target.value)}
+                                            />
+                                            {label}
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Iron pill supplement for 6-14 years */}
+                            <div className="form-group">
+                                <label className="form-label">ยาเม็ดเสริมธาตุเหล็ก</label>
+                                <div className="radio-group">
+                                    {Object.entries(criteriaLabels.iron_supplement).map(([value, label]) => (
+                                        <label
+                                            key={value}
+                                            className={`radio-option ${formData.iron_supplement === value ? 'selected' : ''}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="iron_supplement"
+                                                value={value}
+                                                checked={formData.iron_supplement === value}
+                                                onChange={(e) => handleInputChange('iron_supplement', e.target.value)}
+                                            />
+                                            {label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
                     )}
 
                     {/* Age 15-18 fields */}

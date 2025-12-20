@@ -20,6 +20,8 @@ interface ExportData {
     }[];
     healthRecords: {
         residentName: string;
+        houseNumber: string;
+        villageNo: number;
         ageGroup: string;
         weight: number | null;
         height: number | null;
@@ -40,20 +42,67 @@ export default function ExportPage() {
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
     const [data, setData] = useState<ExportData | null>(null);
+    const [selectedVillage, setSelectedVillage] = useState<number>(1);
+
+    // Helper function to fetch all rows using pagination (Supabase limits to 1000 rows per request)
+    async function fetchAllRows<T>(tableName: string, selectFields: string): Promise<T[]> {
+        const PAGE_SIZE = 1000;
+        let allData: T[] = [];
+        let from = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from(tableName)
+                .select(selectFields)
+                .range(from, from + PAGE_SIZE - 1);
+
+            if (error) {
+                console.error(`Error fetching ${tableName}:`, error);
+                break;
+            }
+
+            if (data && data.length > 0) {
+                allData = [...allData, ...(data as T[])];
+                from += PAGE_SIZE;
+                hasMore = data.length === PAGE_SIZE;
+            } else {
+                hasMore = false;
+            }
+        }
+
+        return allData;
+    }
 
     useEffect(() => {
         async function loadData() {
-            // Fetch all residents with houses
-            const { data: residents } = await supabase
-                .from('residents')
-                .select('*, houses(*)');
+            // Fetch all residents with houses using pagination
+            interface ResidentWithHouse {
+                id: string;
+                national_id: string;
+                prefix: string;
+                first_name: string;
+                last_name: string;
+                birth_date: string;
+                gender: string;
+                relationship: string;
+                houses: { house_number: string; village_no: number } | null;
+            }
 
-            // Fetch health records
-            const { data: records } = await supabase
-                .from('health_records')
-                .select('*');
+            const residents = await fetchAllRows<ResidentWithHouse>('residents', '*, houses(*)');
 
-            if (!residents) {
+            // Fetch health records using pagination
+            const records = await fetchAllRows<{
+                resident_id: string;
+                weight: number;
+                height: number;
+                bmi: number | null;
+                passed_criteria: boolean | null;
+                age_group: string;
+                created_at: string;
+            }>('health_records', '*');
+
+            if (!residents || residents.length === 0) {
                 setLoading(false);
                 return;
             }
@@ -80,8 +129,11 @@ export default function ExportPage() {
             const healthRecordsList = residents.map(r => {
                 const record = recordMap.get(r.id);
                 const age = calculateAge(r.birth_date);
+                const house = r.houses as { house_number: string; village_no: number } | null;
                 return {
                     residentName: `${r.prefix}${r.first_name} ${r.last_name}`,
+                    houseNumber: house?.house_number || '',
+                    villageNo: house?.village_no || 6,
                     ageGroup: getAgeGroup(age),
                     weight: record?.weight || null,
                     height: record?.height || null,
@@ -121,11 +173,26 @@ export default function ExportPage() {
         loadData();
     }, []);
 
-    const exportResidents = () => {
+    // Export functions that filter by selected village (0 = all)
+    const getFilteredData = (villageNo: number) => {
+        if (!data) return { residents: [], records: [] };
+        if (villageNo === 0) {
+            return { residents: data.residents, records: data.healthRecords };
+        }
+        return {
+            residents: data.residents.filter(r => r.villageNo === villageNo),
+            records: data.healthRecords.filter(r => r.villageNo === villageNo)
+        };
+    };
+
+    const exportResidentsByVillage = (villageNo: number) => {
         if (!data) return;
         setExporting(true);
 
-        const ws = XLSX.utils.json_to_sheet(data.residents.map(r => ({
+        const { residents } = getFilteredData(villageNo);
+        const suffix = villageNo === 0 ? 'ทั้งหมด' : `หมู่${villageNo}`;
+
+        const ws = XLSX.utils.json_to_sheet(residents.map(r => ({
             'ชื่อ-นามสกุล': r.name,
             'เลขบัตรประชาชน': r.national_id,
             'อายุ': r.age,
@@ -138,16 +205,21 @@ export default function ExportPage() {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูลประชากร');
-        XLSX.writeFile(wb, `ข้อมูลประชากร_${new Date().toISOString().split('T')[0]}.xlsx`);
+        XLSX.writeFile(wb, `ข้อมูลประชากร_${suffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
         setExporting(false);
     };
 
-    const exportHealthRecords = () => {
+    const exportHealthRecordsByVillage = (villageNo: number) => {
         if (!data) return;
         setExporting(true);
 
-        const ws = XLSX.utils.json_to_sheet(data.healthRecords.map(r => ({
+        const { records } = getFilteredData(villageNo);
+        const suffix = villageNo === 0 ? 'ทั้งหมด' : `หมู่${villageNo}`;
+
+        const ws = XLSX.utils.json_to_sheet(records.map(r => ({
             'ชื่อ-นามสกุล': r.residentName,
+            'บ้านเลขที่': r.houseNumber,
+            'หมู่': r.villageNo,
             'กลุ่มวัย': r.ageGroup,
             'น้ำหนัก (กก.)': r.weight,
             'ส่วนสูง (ซม.)': r.height,
@@ -158,26 +230,37 @@ export default function ExportPage() {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'ผลสำรวจสุขภาพ');
-        XLSX.writeFile(wb, `ผลสำรวจสุขภาพ_${new Date().toISOString().split('T')[0]}.xlsx`);
+        XLSX.writeFile(wb, `ผลสำรวจสุขภาพ_${suffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
         setExporting(false);
     };
 
-    const exportStats = () => {
+    const exportStatsByVillage = (villageNo: number) => {
         if (!data) return;
         setExporting(true);
 
-        const ws = XLSX.utils.json_to_sheet(data.stats.map(s => ({
-            'กลุ่มวัย': s.ageGroup,
-            'จำนวนประชากร': s.total,
-            'สำรวจแล้ว': s.surveyed,
-            'ผ่านเกณฑ์': s.passed,
-            'ไม่ผ่านเกณฑ์': s.failed,
-            '% ครอบคลุม': s.total > 0 ? `${Math.round((s.surveyed / s.total) * 100)}%` : '0%'
-        })));
+        const { residents, records } = getFilteredData(villageNo);
+        const suffix = villageNo === 0 ? 'ทั้งหมด' : `หมู่${villageNo}`;
 
+        const ageGroups = ['0-5', '6-14', '15-18', '19-59', '60+'];
+        const stats = ageGroups.map(ag => {
+            const inGroup = residents.filter(r => r.ageGroup === ag);
+            const surveyed = records.filter(r => r.ageGroup === ag);
+            const passed = surveyed.filter(r => r.passedCriteria === true).length;
+            const failed = surveyed.filter(r => r.passedCriteria === false).length;
+            return {
+                'กลุ่มวัย': ag,
+                'จำนวนประชากร': inGroup.length,
+                'สำรวจแล้ว': surveyed.length,
+                'ผ่านเกณฑ์': passed,
+                'ไม่ผ่านเกณฑ์': failed,
+                '% ครอบคลุม': inGroup.length > 0 ? `${Math.round((surveyed.length / inGroup.length) * 100)}%` : '0%'
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(stats);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'สรุปสถิติ');
-        XLSX.writeFile(wb, `สรุปสถิติ_${new Date().toISOString().split('T')[0]}.xlsx`);
+        XLSX.writeFile(wb, `สรุปสถิติ_${suffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
         setExporting(false);
     };
 
@@ -203,6 +286,8 @@ export default function ExportPage() {
         // Sheet 2: Health Records
         const ws2 = XLSX.utils.json_to_sheet(data.healthRecords.map(r => ({
             'ชื่อ-นามสกุล': r.residentName,
+            'บ้านเลขที่': r.houseNumber,
+            'หมู่': r.villageNo,
             'กลุ่มวัย': r.ageGroup,
             'น้ำหนัก (กก.)': r.weight,
             'ส่วนสูง (ซม.)': r.height,
@@ -282,30 +367,63 @@ export default function ExportPage() {
 
                 {/* Export Options */}
                 <div className="grid md:grid-cols-2 gap-6">
-                    {/* Individual Exports */}
+                    {/* Export by Village Selection */}
                     <div className="card p-6">
-                        <h3 className="font-bold text-gray-800 mb-4">📄 Export แยกไฟล์</h3>
-                        <div className="space-y-4">
+                        <h3 className="font-bold text-gray-800 mb-4">🏘️ Export แยกหมู่</h3>
+
+                        {/* Village Selector */}
+                        <div className="mb-6">
+                            <label className="form-label">เลือกหมู่ที่ต้องการ</label>
+                            <select
+                                value={selectedVillage}
+                                onChange={(e) => setSelectedVillage(Number(e.target.value))}
+                                className="input"
+                                title="เลือกหมู่"
+                            >
+                                <option value={0}>📍 ทุกหมู่ ({data?.residents.length || 0} คน)</option>
+                                {[1, 2, 3, 4, 5, 6].map(v => (
+                                    <option key={v} value={v}>
+                                        หมู่ที่ {v} ({data?.residents.filter(r => r.villageNo === v).length || 0} คน)
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Selected village info */}
+                        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                            <p className="text-sm text-gray-600">
+                                📊 ข้อมูลที่เลือก: <span className="font-bold text-gray-800">
+                                    {selectedVillage === 0 ? 'ทุกหมู่' : `หมู่ที่ ${selectedVillage}`}
+                                </span>
+                            </p>
+                            <p className="text-sm text-gray-500">
+                                จำนวน {getFilteredData(selectedVillage).residents.length} คน,
+                                สำรวจแล้ว {getFilteredData(selectedVillage).records.length} คน
+                            </p>
+                        </div>
+
+                        {/* Export buttons for selected village */}
+                        <div className="space-y-3">
                             <button
-                                onClick={exportResidents}
+                                onClick={() => exportResidentsByVillage(selectedVillage)}
                                 disabled={exporting}
                                 className="w-full btn btn-secondary flex items-center justify-center gap-2"
                             >
                                 👥 ข้อมูลประชากร
                             </button>
                             <button
-                                onClick={exportHealthRecords}
+                                onClick={() => exportHealthRecordsByVillage(selectedVillage)}
                                 disabled={exporting}
                                 className="w-full btn btn-secondary flex items-center justify-center gap-2"
                             >
                                 📋 ผลสำรวจสุขภาพ
                             </button>
                             <button
-                                onClick={exportStats}
+                                onClick={() => exportStatsByVillage(selectedVillage)}
                                 disabled={exporting}
                                 className="w-full btn btn-secondary flex items-center justify-center gap-2"
                             >
-                                📊 สรุปสถิติ
+                                � สรุปสถิติ
                             </button>
                         </div>
                     </div>

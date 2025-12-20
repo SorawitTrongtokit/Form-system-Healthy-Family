@@ -104,21 +104,6 @@ export default function AdminLoginPage() {
                             {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
                         </button>
                     </form>
-
-                    {/* Demo credentials */}
-                    <div className="mt-6 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-500 text-center mb-2">
-                            <strong>สำหรับทดสอบ:</strong>
-                        </p>
-                        <div className="bg-gray-50 p-3 rounded-lg text-center">
-                            <p className="text-sm text-gray-600">
-                                Username: <code className="bg-gray-200 px-1 rounded">admin</code>
-                            </p>
-                            <p className="text-sm text-gray-600">
-                                Password: <code className="bg-gray-200 px-1 rounded">admin123</code>
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
                 <p className="text-center text-white/60 text-sm mt-6">

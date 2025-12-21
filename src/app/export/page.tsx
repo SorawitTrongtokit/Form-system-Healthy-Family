@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
@@ -39,10 +40,40 @@ interface ExportData {
 }
 
 export default function ExportPage() {
+    const router = useRouter();
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
     const [data, setData] = useState<ExportData | null>(null);
     const [selectedVillage, setSelectedVillage] = useState<number>(1);
+
+    // Check if session is valid
+    function isSessionValid(): boolean {
+        if (typeof window === 'undefined') return false;
+
+        const sessionStr = localStorage.getItem('adminSession');
+        if (!sessionStr) return false;
+
+        try {
+            const session = JSON.parse(sessionStr);
+            return session.loggedIn && session.expiresAt > Date.now();
+        } catch {
+            return false;
+        }
+    }
+
+    // Check admin authentication
+    useEffect(() => {
+        if (!isSessionValid()) {
+            localStorage.removeItem('adminSession');
+            localStorage.removeItem('adminLoggedIn');
+            router.push('/admin');
+        } else {
+            setIsAdmin(true);
+        }
+        setCheckingAuth(false);
+    }, [router]);
 
     // Helper function to fetch all rows using pagination (Supabase limits to 1000 rows per request)
     async function fetchAllRows<T>(tableName: string, selectFields: string): Promise<T[]> {
@@ -170,8 +201,11 @@ export default function ExportPage() {
             setLoading(false);
         }
 
-        loadData();
-    }, []);
+        // Only load data if admin is authenticated
+        if (isAdmin) {
+            loadData();
+        }
+    }, [isAdmin]);
 
     // Export functions that filter by selected village (0 = all)
     const getFilteredData = (villageNo: number) => {
@@ -311,6 +345,30 @@ export default function ExportPage() {
         XLSX.writeFile(wb, `รายงานสุขภาพ_${new Date().toISOString().split('T')[0]}.xlsx`);
         setExporting(false);
     };
+
+    // Show loading while checking authentication
+    if (checkingAuth) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="loading-spinner mx-auto mb-4"></div>
+                    <p className="text-gray-500">กำลังตรวจสอบสิทธิ์...</p>
+                </div>
+            </main>
+        );
+    }
+
+    // Don't render if not admin (will redirect)
+    if (!isAdmin) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="text-6xl mb-4">🔒</div>
+                    <p className="text-gray-500">กรุณาเข้าสู่ระบบ Admin</p>
+                </div>
+            </main>
+        );
+    }
 
     if (loading) {
         return (

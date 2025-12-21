@@ -12,19 +12,33 @@ interface AdminStats {
     healthRecords: number;
 }
 
+// Check if session is valid
+function isSessionValid(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const sessionStr = localStorage.getItem('adminSession');
+    if (!sessionStr) return false;
+
+    try {
+        const session = JSON.parse(sessionStr);
+        return session.loggedIn && session.expiresAt > Date.now();
+    } catch {
+        return false;
+    }
+}
+
 export default function AdminDashboard() {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        // Check if admin logged in
-        if (typeof window !== 'undefined') {
-            const isLoggedIn = localStorage.getItem('adminLoggedIn');
-            if (!isLoggedIn) {
-                router.push('/admin');
-                return;
-            }
+        // Check if admin session is valid
+        if (!isSessionValid()) {
+            localStorage.removeItem('adminSession');
+            localStorage.removeItem('adminLoggedIn');
+            router.push('/admin');
+            return;
         }
 
         async function loadStats() {
@@ -49,6 +63,7 @@ export default function AdminDashboard() {
 
     const handleLogout = () => {
         if (typeof window !== 'undefined') {
+            localStorage.removeItem('adminSession');
             localStorage.removeItem('adminLoggedIn');
         }
         router.push('/admin');

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const loginAttempts: Map<string, { count: number; lastAttempt: number; lockedUntil: number }> = new Map();
 
 // Config
-const MAX_ATTEMPTS = 7;
+const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // 5 minutes window
 

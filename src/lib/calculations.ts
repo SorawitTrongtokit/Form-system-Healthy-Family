@@ -60,13 +60,17 @@ const weightForAgeBoys: Record<number, { min: number; max: number }> = {
     60: { min: 16.47, max: 20.13 },   // 5 ปี 18.3 กก.
     72: { min: 18.45, max: 22.55 },   // 6 ปี 20.5 กก.
     84: { min: 20.61, max: 25.19 },   // 7 ปี 22.9 กก.
-    96: { min: 22.86, max: 27.94 },   // 8 ปี 25.4 กก.
-    108: { min: 25.29, max: 30.91 },  // 9 ปี 28.1 กก.
-    120: { min: 28.08, max: 34.32 },  // 10 ปี 31.2 กก.
-    132: { min: 31.32, max: 38.28 },  // 11 ปี 34.8 กก.
-    144: { min: 35.10, max: 42.90 },  // 12 ปี 39.0 กก.
-    156: { min: 39.51, max: 48.29 },  // 13 ปี 43.9 กก.
-    168: { min: 44.37, max: 54.23 },  // 14 ปี 49.3 กก.
+    96: { min: 23.04, max: 28.16 },   // 8 ปี 25.6 กก.
+    108: { min: 25.74, max: 31.46 },  // 9 ปี 28.6 กก.
+    120: { min: 28.80, max: 35.20 },  // 10 ปี 32.0 กก.
+    132: { min: 32.31, max: 39.49 },  // 11 ปี 35.9 กก.
+    144: { min: 36.45, max: 44.55 },  // 12 ปี 40.5 กก.
+    156: { min: 41.04, max: 50.16 },  // 13 ปี 45.6 กก.
+    168: { min: 45.99, max: 56.21 },  // 14 ปี 51.1 กก.
+    180: { min: 50.67, max: 61.93 },  // 15 ปี 56.3 กก.
+    192: { min: 54.72, max: 66.88 },  // 16 ปี 60.8 กก.
+    204: { min: 57.96, max: 70.84 },  // 17 ปี 64.4 กก.
+    216: { min: 60.21, max: 73.59 },  // 18 ปี 66.9 กก.
 };
 
 const weightForAgeGirls: Record<number, { min: number; max: number }> = {
@@ -81,10 +85,14 @@ const weightForAgeGirls: Record<number, { min: number; max: number }> = {
     96: { min: 22.50, max: 27.50 },   // 8 ปี 25.0 กก.
     108: { min: 25.38, max: 31.02 },  // 9 ปี 28.2 กก.
     120: { min: 28.71, max: 35.09 },  // 10 ปี 31.9 กก.
-    132: { min: 32.67, max: 39.93 },  // 11 ปี 36.3 กก.
-    144: { min: 36.99, max: 45.21 },  // 12 ปี 41.1 กก.
-    156: { min: 41.22, max: 50.38 },  // 13 ปี 45.8 กก.
-    168: { min: 45.00, max: 55.00 },  // 14 ปี 50.0 กก.
+    132: { min: 33.21, max: 40.59 },  // 11 ปี 36.9 กก.
+    144: { min: 38.25, max: 46.75 },  // 12 ปี 42.5 กก.
+    156: { min: 41.49, max: 50.71 },  // 13 ปี 46.1 กก.
+    168: { min: 43.83, max: 53.57 },  // 14 ปี 48.7 กก.
+    180: { min: 46.08, max: 56.32 },  // 15 ปี 51.2 กก.
+    192: { min: 47.70, max: 58.30 },  // 16 ปี 53.0 กก.
+    204: { min: 48.96, max: 59.84 },  // 17 ปี 54.4 กก.
+    216: { min: 50.58, max: 61.82 },  // 18 ปี 56.2 กก.
 };
 
 // คำนวณเกณฑ์น้ำหนักตามอายุ
@@ -126,6 +134,10 @@ const heightForAgeBoys: Record<number, { min: number; max: number }> = {
     144: { min: 141.65, max: 156.56 },// 12 ปี 149.1 ซม.
     156: { min: 148.20, max: 163.80 },// 13 ปี 156.0 ซม.
     168: { min: 155.04, max: 171.36 },// 14 ปี 163.2 ซม.
+    180: { min: 160.55, max: 177.45 },// 15 ปี 169.0 ซม.
+    192: { min: 163.50, max: 180.72 },// 16 ปี 172.1 ซม.
+    204: { min: 165.40, max: 182.81 },// 17 ปี 174.1 ซม.
+    216: { min: 166.63, max: 184.17 },// 18 ปี 175.4 ซม.
 };
 
 const heightForAgeGirls: Record<number, { min: number; max: number }> = {
@@ -137,13 +149,17 @@ const heightForAgeGirls: Record<number, { min: number; max: number }> = {
     60: { min: 103.93, max: 114.87 }, // 5 ปี 109.4 ซม.
     72: { min: 109.35, max: 120.86 }, // 6 ปี 115.1 ซม.
     84: { min: 114.76, max: 126.84 }, // 7 ปี 120.8 ซม.
-    96: { min: 120.27, max: 132.93 }, // 8 ปี 126.6 ซม.
-    108: { min: 125.88, max: 139.13 },// 9 ปี 132.5 ซม.
+    96: { min: 120.08, max: 132.72 }, // 8 ปี 126.4 ซม.
+    108: { min: 125.40, max: 138.60 },// 9 ปี 132.0 ซม.
     120: { min: 131.67, max: 145.53 },// 10 ปี 138.6 ซม.
     132: { min: 137.75, max: 152.25 },// 11 ปี 145.0 ซม.
     144: { min: 143.64, max: 158.76 },// 12 ปี 151.2 ซม.
-    156: { min: 148.58, max: 164.22 },// 13 ปี 156.4 ซม.
-    168: { min: 151.81, max: 167.79 },// 14 ปี 159.8 ซม.
+    156: { min: 148.01, max: 163.59 },// 13 ปี 155.8 ซม.
+    168: { min: 150.58, max: 166.43 },// 14 ปี 158.5 ซม.
+    180: { min: 151.91, max: 167.90 },// 15 ปี 159.9 ซม.
+    192: { min: 152.38, max: 168.42 },// 16 ปี 160.4 ซม.
+    204: { min: 152.67, max: 168.74 },// 17 ปี 160.7 ซม.
+    216: { min: 154.95, max: 171.26 },// 18 ปี 163.1 ซม.
 };
 
 // คำนวณเกณฑ์ส่วนสูงตามอายุ
@@ -167,18 +183,81 @@ export function getHeightCriteria(
     return 'normal';
 }
 
-// คำนวณเกณฑ์น้ำหนักตามส่วนสูง
+// เกณฑ์ BMI ตามอายุ (ชาย) - อ้างอิงจากตารางมาตรฐาน ± 10%
+const bmiForAgeBoys: Record<number, { min: number; max: number }> = {
+    0: { min: 12.06, max: 14.74 },    // แรกเกิด BMI 13.4
+    12: { min: 15.12, max: 18.48 },   // 1 ปี BMI 16.8
+    24: { min: 14.40, max: 17.60 },   // 2 ปี BMI 16.0
+    36: { min: 13.95, max: 17.05 },   // 3 ปี BMI 15.5
+    48: { min: 13.77, max: 16.83 },   // 4 ปี BMI 15.3
+    60: { min: 13.68, max: 16.72 },   // 5 ปี BMI 15.2
+    72: { min: 13.77, max: 16.83 },   // 6 ปี BMI 15.3
+    84: { min: 13.95, max: 17.05 },   // 7 ปี BMI 15.5
+    96: { min: 14.13, max: 17.27 },   // 8 ปี BMI 15.7
+    108: { min: 14.58, max: 17.82 },  // 9 ปี BMI 16.2
+    120: { min: 14.94, max: 18.26 },  // 10 ปี BMI 16.6
+    132: { min: 15.48, max: 18.92 },  // 11 ปี BMI 17.2
+    144: { min: 16.11, max: 19.69 },  // 12 ปี BMI 17.9
+    156: { min: 16.92, max: 20.68 },  // 13 ปี BMI 18.8
+    168: { min: 17.28, max: 21.12 },  // 14 ปี BMI 19.2
+    180: { min: 17.73, max: 21.67 },  // 15 ปี BMI 19.7
+    192: { min: 18.45, max: 22.55 },  // 16 ปี BMI 20.5
+    204: { min: 19.17, max: 23.43 },  // 17 ปี BMI 21.3
+    216: { min: 19.53, max: 23.87 },  // 18 ปี BMI 21.7
+};
+
+// เกณฑ์ BMI ตามอายุ (หญิง) - อ้างอิงจากตารางมาตรฐาน ± 10%
+const bmiForAgeGirls: Record<number, { min: number; max: number }> = {
+    0: { min: 11.97, max: 14.63 },    // แรกเกิด BMI 13.3
+    12: { min: 14.67, max: 17.93 },   // 1 ปี BMI 16.3
+    24: { min: 14.13, max: 17.27 },   // 2 ปี BMI 15.7
+    36: { min: 13.86, max: 16.94 },   // 3 ปี BMI 15.4
+    48: { min: 13.77, max: 16.83 },   // 4 ปี BMI 15.3
+    60: { min: 13.68, max: 16.72 },   // 5 ปี BMI 15.2
+    72: { min: 13.77, max: 16.83 },   // 6 ปี BMI 15.3
+    84: { min: 13.86, max: 16.94 },   // 7 ปี BMI 15.4
+    96: { min: 14.13, max: 17.27 },   // 8 ปี BMI 15.7
+    108: { min: 14.49, max: 17.71 },  // 9 ปี BMI 16.1
+    120: { min: 14.94, max: 18.26 },  // 10 ปี BMI 16.6
+    132: { min: 15.84, max: 19.36 },  // 11 ปี BMI 17.6
+    144: { min: 16.65, max: 20.35 },  // 12 ปี BMI 18.5
+    156: { min: 17.01, max: 20.79 },  // 13 ปี BMI 18.9
+    168: { min: 17.37, max: 21.23 },  // 14 ปี BMI 19.3
+    180: { min: 17.91, max: 21.89 },  // 15 ปี BMI 19.9
+    192: { min: 18.45, max: 22.55 },  // 16 ปี BMI 20.5
+    204: { min: 18.90, max: 23.10 },  // 17 ปี BMI 21.0
+    216: { min: 18.99, max: 23.21 },  // 18 ปี BMI 21.1
+};
+
+// คำนวณเกณฑ์น้ำหนักตามส่วนสูง (ใช้ BMI ตามอายุ)
 export function getWeightForHeightCriteria(
     weight: number,
     height: number,
-    _gender: 'male' | 'female'
+    gender: 'male' | 'female',
+    ageMonths?: number
 ): 'normal' | 'underweight' | 'overweight' {
-    // ใช้ BMI-for-age สำหรับความง่าย
     const bmi = calculateBMI(weight, height);
 
-    // เกณฑ์ BMI สำหรับเด็ก (โดยทั่วไป)
-    if (bmi < 14) return 'underweight';
-    if (bmi > 18) return 'overweight';
+    // ถ้าไม่มีอายุ ใช้เกณฑ์ทั่วไป
+    if (!ageMonths) {
+        if (bmi < 14) return 'underweight';
+        if (bmi > 22) return 'overweight';
+        return 'normal';
+    }
+
+    // ใช้ตาราง BMI ตามอายุและเพศ
+    const table = gender === 'male' ? bmiForAgeBoys : bmiForAgeGirls;
+    const nearestAge = Object.keys(table)
+        .map(Number)
+        .reduce((prev, curr) =>
+            Math.abs(curr - ageMonths) < Math.abs(prev - ageMonths) ? curr : prev
+        );
+
+    const range = table[nearestAge];
+    if (!range) return 'normal';
+
+    if (bmi < range.min) return 'underweight';
+    if (bmi > range.max) return 'overweight';
     return 'normal';
 }
 

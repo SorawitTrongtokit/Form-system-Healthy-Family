@@ -52,13 +52,14 @@ export default function SurveyPage() {
     // Calculate criteria based on weight/height
     const getCriteriaUpdates = (weight: number, height: number) => {
         const calculatedBmi = calculateBMI(weight, height);
-        if (ageGroup === '0-5' || ageGroup === '6-14') {
+        // คำนวณเกณฑ์สำหรับอายุ 0-18 ปี
+        if (ageGroup === '0-5' || ageGroup === '6-14' || ageGroup === '15-18') {
             const gender = resident?.gender || 'male';
             return {
                 bmi: calculatedBmi,
                 weight_criteria: getWeightCriteria(weight, ageMonths, gender),
                 height_criteria: getHeightCriteria(height, ageMonths, gender),
-                weight_for_height: getWeightForHeightCriteria(weight, height, gender)
+                weight_for_height: getWeightForHeightCriteria(weight, height, gender, ageMonths)
             };
         }
         return { bmi: calculatedBmi };
@@ -121,6 +122,42 @@ export default function SurveyPage() {
             }
             return updated;
         });
+    };
+
+    // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่ตามกลุ่มวัย
+    const isFormComplete = (): boolean => {
+        // ทุกกลุ่มต้องมีน้ำหนักและส่วนสูง
+        if (!formData.weight || !formData.height) return false;
+
+        switch (ageGroup) {
+            case '0-5':
+                return !!(
+                    formData.vaccination &&
+                    formData.development &&
+                    formData.iron_supplement
+                );
+            case '6-14':
+                return !!(
+                    formData.vaccination &&
+                    formData.development &&
+                    formData.oral_health
+                );
+            case '15-18':
+                return !!(
+                    formData.alcohol &&
+                    formData.smoking &&
+                    formData.drug_use
+                );
+            case '19-59':
+            case '60+':
+                return !!(
+                    formData.diabetes &&
+                    formData.hypertension &&
+                    formData.dependency
+                );
+            default:
+                return false;
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -375,9 +412,108 @@ export default function SurveyPage() {
                         </>
                     )}
 
-                    {/* Age 6-14: Oral health + Iron pill */}
+                    {/* Age 6-14: Weight/Height criteria + Vaccination + Development + Oral health */}
                     {ageGroup === '6-14' && (
                         <>
+                            {/* Auto-calculated criteria */}
+                            {formData.weight_criteria && (
+                                <div className="grid-3 mb-4">
+                                    <div className={`p-3 rounded-lg text-center border-2 ${formData.weight_criteria === 'normal'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.weight_criteria === 'underweight'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-red-50 border-red-300'
+                                        }`}>
+                                        <p className="text-sm text-gray-600">เกณฑ์น้ำหนัก</p>
+                                        <p className={`font-bold ${formData.weight_criteria === 'normal'
+                                            ? 'text-green-700'
+                                            : formData.weight_criteria === 'underweight'
+                                                ? 'text-orange-700'
+                                                : 'text-red-700'
+                                            }`}>
+                                            {formData.weight_criteria === 'normal' ? '✅' : formData.weight_criteria === 'underweight' ? '⚠️' : '🔴'} {criteriaLabels.weight_criteria[formData.weight_criteria]}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-lg text-center border-2 ${formData.height_criteria === 'normal'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.height_criteria === 'short'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-blue-50 border-blue-300'
+                                        }`}>
+                                        <p className="text-sm text-gray-600">เกณฑ์ส่วนสูง</p>
+                                        <p className={`font-bold ${formData.height_criteria === 'normal'
+                                            ? 'text-green-700'
+                                            : formData.height_criteria === 'short'
+                                                ? 'text-orange-700'
+                                                : 'text-blue-700'
+                                            }`}>
+                                            {formData.height_criteria === 'normal' ? '✅' : formData.height_criteria === 'short' ? '⚠️' : '📏'} {criteriaLabels.height_criteria[formData.height_criteria || 'normal']}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-lg text-center border-2 ${formData.weight_for_height === 'normal'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.weight_for_height === 'underweight'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-red-50 border-red-300'
+                                        }`}>
+                                        <p className="text-sm text-gray-600">น้ำหนักตามส่วนสูง</p>
+                                        <p className={`font-bold ${formData.weight_for_height === 'normal'
+                                            ? 'text-green-700'
+                                            : formData.weight_for_height === 'underweight'
+                                                ? 'text-orange-700'
+                                                : 'text-red-700'
+                                            }`}>
+                                            {formData.weight_for_height === 'normal' ? '✅' : formData.weight_for_height === 'underweight' ? '⚠️' : '🔴'} {criteriaLabels.weight_for_height[formData.weight_for_height || 'normal']}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Vaccination */}
+                            <div className="form-group">
+                                <label className="form-label">การรับวัคซีน</label>
+                                <div className="radio-group">
+                                    {Object.entries(criteriaLabels.vaccination).map(([value, label]) => (
+                                        <label
+                                            key={value}
+                                            className={`radio-option ${formData.vaccination === value ? 'selected' : ''}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="vaccination"
+                                                value={value}
+                                                checked={formData.vaccination === value}
+                                                onChange={(e) => handleInputChange('vaccination', e.target.value)}
+                                            />
+                                            {label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Development */}
+                            <div className="form-group">
+                                <label className="form-label">พัฒนาการตามวัย</label>
+                                <div className="radio-group">
+                                    {Object.entries(criteriaLabels.development).map(([value, label]) => (
+                                        <label
+                                            key={value}
+                                            className={`radio-option ${formData.development === value ? 'selected' : ''}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="development"
+                                                value={value}
+                                                checked={formData.development === value}
+                                                onChange={(e) => handleInputChange('development', e.target.value)}
+                                            />
+                                            {label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Oral health */}
                             <div className="form-group">
                                 <label className="form-label">สุขภาพช่องปาก</label>
                                 <div className="space-y-2">
@@ -398,34 +534,66 @@ export default function SurveyPage() {
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Iron pill supplement for 6-14 years */}
-                            <div className="form-group">
-                                <label className="form-label">ยาเม็ดเสริมธาตุเหล็ก</label>
-                                <div className="radio-group">
-                                    {Object.entries(criteriaLabels.iron_supplement).map(([value, label]) => (
-                                        <label
-                                            key={value}
-                                            className={`radio-option ${formData.iron_supplement === value ? 'selected' : ''}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="iron_supplement"
-                                                value={value}
-                                                checked={formData.iron_supplement === value}
-                                                onChange={(e) => handleInputChange('iron_supplement', e.target.value)}
-                                            />
-                                            {label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
                         </>
                     )}
 
                     {/* Age 15-18 fields */}
                     {ageGroup === '15-18' && (
                         <>
+                            {/* Auto-calculated criteria */}
+                            {formData.weight_criteria && (
+                                <div className="grid-3 mb-4">
+                                    <div className={`p-3 rounded-lg text-center border-2 ${formData.weight_criteria === 'normal'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.weight_criteria === 'underweight'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-red-50 border-red-300'
+                                        }`}>
+                                        <p className="text-sm text-gray-600">เกณฑ์น้ำหนัก</p>
+                                        <p className={`font-bold ${formData.weight_criteria === 'normal'
+                                            ? 'text-green-700'
+                                            : formData.weight_criteria === 'underweight'
+                                                ? 'text-orange-700'
+                                                : 'text-red-700'
+                                            }`}>
+                                            {formData.weight_criteria === 'normal' ? '✅' : formData.weight_criteria === 'underweight' ? '⚠️' : '🔴'} {criteriaLabels.weight_criteria[formData.weight_criteria]}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-lg text-center border-2 ${formData.height_criteria === 'normal'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.height_criteria === 'short'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-blue-50 border-blue-300'
+                                        }`}>
+                                        <p className="text-sm text-gray-600">เกณฑ์ส่วนสูง</p>
+                                        <p className={`font-bold ${formData.height_criteria === 'normal'
+                                            ? 'text-green-700'
+                                            : formData.height_criteria === 'short'
+                                                ? 'text-orange-700'
+                                                : 'text-blue-700'
+                                            }`}>
+                                            {formData.height_criteria === 'normal' ? '✅' : formData.height_criteria === 'short' ? '⚠️' : '📏'} {criteriaLabels.height_criteria[formData.height_criteria || 'normal']}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-lg text-center border-2 ${formData.weight_for_height === 'normal'
+                                        ? 'bg-green-50 border-green-300'
+                                        : formData.weight_for_height === 'underweight'
+                                            ? 'bg-orange-50 border-orange-300'
+                                            : 'bg-red-50 border-red-300'
+                                        }`}>
+                                        <p className="text-sm text-gray-600">น้ำหนักตามส่วนสูง</p>
+                                        <p className={`font-bold ${formData.weight_for_height === 'normal'
+                                            ? 'text-green-700'
+                                            : formData.weight_for_height === 'underweight'
+                                                ? 'text-orange-700'
+                                                : 'text-red-700'
+                                            }`}>
+                                            {formData.weight_for_height === 'normal' ? '✅' : formData.weight_for_height === 'underweight' ? '⚠️' : '🔴'} {criteriaLabels.weight_for_height[formData.weight_for_height || 'normal']}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="form-group">
                                 <label className="form-label">การดื่มสุรา</label>
                                 <div className="radio-group">
@@ -562,14 +730,16 @@ export default function SurveyPage() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={saving}
-                        className="btn btn-primary w-full mt-6"
+                        disabled={saving || !isFormComplete()}
+                        className={`btn w-full mt-6 ${isFormComplete() ? 'btn-primary' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                     >
                         {saving ? (
                             <span className="flex items-center gap-2">
                                 <div className="loading-spinner w-5 h-5"></div>
                                 กำลังบันทึก...
                             </span>
+                        ) : !isFormComplete() ? (
+                            '⚠️ กรุณากรอกข้อมูลให้ครบ'
                         ) : (
                             '💾 บันทึกข้อมูล'
                         )}

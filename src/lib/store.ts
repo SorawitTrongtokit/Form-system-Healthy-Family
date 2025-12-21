@@ -158,16 +158,21 @@ export async function getMyHousesAsync(): Promise<HouseWithStats[]> {
 
         const { data: records } = await supabase
             .from('health_records')
-            .select('resident_id')
+            .select('resident_id, passed_criteria')
             .eq('house_id', house.id);
 
         const residentList = residents || [];
-        const recordCount = records?.length || 0;
+        const recordList = records || [];
+        const recordCount = recordList.length;
+        const passedCount = recordList.filter(r => r.passed_criteria === true).length;
+        const failedCount = recordList.filter(r => r.passed_criteria === false).length;
 
         results.push({
             ...house,
             total_residents: residentList.length,
             surveyed_count: recordCount,
+            passed_count: passedCount,
+            failed_count: failedCount,
             residents: residentList
         });
     }

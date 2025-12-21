@@ -64,7 +64,12 @@ export default function VolunteerDashboard() {
         } else if (house.surveyed_count < house.total_residents) {
             return <span className="badge badge-warning">🟡 สำรวจบางส่วน</span>;
         } else {
-            return <span className="badge badge-success">✅ สำรวจครบ</span>;
+            // สำรวจครบแล้ว - แสดงสถานะผ่าน/ไม่ผ่าน
+            if (house.failed_count === 0) {
+                return <span className="badge badge-success">✅ ผ่านเกณฑ์ทุกคน</span>;
+            } else {
+                return <span className="badge bg-red-100 text-red-700">❌ ไม่ผ่านเกณฑ์</span>;
+            }
         }
     };
 
@@ -158,21 +163,23 @@ export default function VolunteerDashboard() {
                                     href={`/volunteer/house/${house.id}`}
                                     className="block p-4 bg-white hover:bg-teal-50 rounded-lg border-2 border-gray-100 hover:border-teal-300 transition-all"
                                 >
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h4 className="font-bold text-gray-800">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-gray-800 text-lg">
                                                 🏠 บ้านเลขที่ {house.house_number}
                                             </h4>
-                                            <p className="text-gray-600 text-sm">
-                                                หมู่ {house.village_no} | 👥 {house.total_residents} คน |
-                                                📝 สำรวจแล้ว {house.surveyed_count} คน
+                                            <p className="text-gray-600 text-sm mt-1">
+                                                หมู่ {house.village_no} | 👥 {house.total_residents} คน | 📝 สำรวจแล้ว {house.surveyed_count} คน
                                             </p>
+                                            {house.failed_count > 0 && (
+                                                <p className="text-red-600 font-medium text-sm mt-1">
+                                                    ❌ ไม่ผ่าน {house.failed_count} คน
+                                                </p>
+                                            )}
                                         </div>
-                                        <div className="text-right">
+                                        <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
                                             {getStatusBadge(house)}
-                                            <div className="mt-2">
-                                                <span className="text-teal-600 text-sm">ดูรายละเอียด →</span>
-                                            </div>
+                                            <span className="text-teal-600 text-sm font-medium">ดูรายละเอียด →</span>
                                         </div>
                                     </div>
                                 </Link>

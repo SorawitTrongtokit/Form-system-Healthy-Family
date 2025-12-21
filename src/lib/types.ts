@@ -77,6 +77,8 @@ export interface HealthRecord {
 export interface HouseWithStats extends House {
     total_residents: number;
     surveyed_count: number;
+    passed_count: number;
+    failed_count: number;
     residents?: Resident[];
 }
 

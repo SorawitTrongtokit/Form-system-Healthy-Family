@@ -4,17 +4,28 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateThaiNationalId } from '@/lib/validation';
-import { loginAsync, initializeStore } from '@/lib/store';
+import { loginAsync, initializeStore, restoreSession } from '@/lib/store';
 
 export default function LoginPage() {
     const [nationalId, setNationalId] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [checkingSession, setCheckingSession] = useState(true);
     const router = useRouter();
 
+    // Check if already logged in
     useEffect(() => {
-        initializeStore();
-    }, []);
+        async function checkExistingSession() {
+            await initializeStore();
+            const volunteer = await restoreSession();
+            if (volunteer) {
+                router.push('/volunteer');
+            } else {
+                setCheckingSession(false);
+            }
+        }
+        checkExistingSession();
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,6 +50,18 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
+
+    // Show loading while checking session
+    if (checkingSession) {
+        return (
+            <main className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                <div className="text-center">
+                    <div className="loading-spinner mx-auto mb-4"></div>
+                    <p className="text-white/80">กำลังตรวจสอบ...</p>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>

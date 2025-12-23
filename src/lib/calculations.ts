@@ -289,12 +289,18 @@ export function checkPassedCriteria(
                 data.drug_use === 'never'
             );
         case '19-59':
-        case '60+':
+        case '60+': {
+            // ตรวจสอบ BMI (18.5-24.9 คือปกติ)
+            const bmi = typeof data.bmi === 'number' ? data.bmi : 0;
+            const bmiPassed = bmi >= 18.5 && bmi <= 24.9;
+
             return (
+                bmiPassed &&
                 (data.diabetes === 'no' || data.diabetes === 'hba1c_low') &&
                 (data.hypertension === 'no' || data.hypertension === 'bp_controlled') &&
                 data.dependency !== 'no_caregiver'
             );
+        }
         default:
             return false;
     }

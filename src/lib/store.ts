@@ -338,14 +338,45 @@ export interface DashboardStats {
         failed: number;
         passedPercent: number;
     }[];
+    byVillage: {
+        villageNo: number;
+        totalResidents: number;
+        surveyedCount: number;
+        passed: number;
+        failed: number;
+        passedPercent: number;
+    }[];
 }
 
 export async function getDashboardStatsAsync(): Promise<DashboardStats> {
-    // Fetch all residents using pagination
-    const allResidents = await fetchAllRows<{ id: string; birth_date: string }>('residents', 'id, birth_date');
+    // Fetch all residents with house_id using pagination
+    interface ResidentWithHouse {
+        id: string;
+        birth_date: string;
+        house_id: string;
+    }
+    const allResidents = await fetchAllRows<ResidentWithHouse>('residents', 'id, birth_date, house_id');
+
+    // Fetch all houses with village_no
+    interface HouseWithVillage {
+        id: string;
+        village_no: number;
+    }
+    const allHouses = await fetchAllRows<HouseWithVillage>('houses', 'id, village_no');
+
+    // Create house to village mapping
+    const houseToVillage = new Map<string, number>();
+    allHouses.forEach(h => houseToVillage.set(h.id, h.village_no));
 
     // Fetch all health records using pagination
-    const allRecords = await fetchAllRows<HealthRecord>('health_records', '*');
+    interface HealthRecordWithHouse {
+        id: string;
+        resident_id: string;
+        house_id: string;
+        age_group: string;
+        passed_criteria: boolean | null;
+    }
+    const allRecords = await fetchAllRows<HealthRecordWithHouse>('health_records', 'id, resident_id, house_id, age_group, passed_criteria');
 
     const totalResidents = allResidents.length;
     const surveyedCount = allRecords.length;
@@ -372,11 +403,38 @@ export async function getDashboardStatsAsync(): Promise<DashboardStats> {
         };
     });
 
+    // Calculate stats by village
+    const villageNumbers = [...new Set(allHouses.map(h => h.village_no))].sort((a, b) => a - b);
+
+    const byVillage = villageNumbers.map(villageNo => {
+        // Get houses in this village
+        const housesInVillage = allHouses.filter(h => h.village_no === villageNo).map(h => h.id);
+        const houseSet = new Set(housesInVillage);
+
+        // Get residents in this village
+        const residentsInVillage = allResidents.filter(r => houseSet.has(r.house_id));
+
+        // Get records in this village
+        const recordsInVillage = allRecords.filter(hr => houseSet.has(hr.house_id));
+        const passed = recordsInVillage.filter(hr => hr.passed_criteria === true).length;
+        const failed = recordsInVillage.filter(hr => hr.passed_criteria === false).length;
+
+        return {
+            villageNo,
+            totalResidents: residentsInVillage.length,
+            surveyedCount: recordsInVillage.length,
+            passed,
+            failed,
+            passedPercent: recordsInVillage.length > 0 ? Math.round((passed / recordsInVillage.length) * 100) : 0
+        };
+    });
+
     return {
         totalResidents,
         surveyedCount,
         coveragePercent,
-        byAgeGroup
+        byAgeGroup,
+        byVillage
     };
 }
 
@@ -385,7 +443,8 @@ export function getDashboardStats(): DashboardStats {
         totalResidents: 0,
         surveyedCount: 0,
         coveragePercent: 0,
-        byAgeGroup: []
+        byAgeGroup: [],
+        byVillage: []
     };
 }
 

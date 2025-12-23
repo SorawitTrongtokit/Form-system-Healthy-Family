@@ -129,6 +129,46 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+                {/* Village Stats */}
+                <div className="card p-6 mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">🏘️ สถิติแยกรายหมู่บ้าน</h2>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-gray-200 bg-gray-100">
+                                    <th className="text-left py-3 px-4 text-gray-700 font-semibold">หมู่บ้าน</th>
+                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">ประชากร</th>
+                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">สำรวจแล้ว</th>
+                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">ผ่านเกณฑ์</th>
+                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">ไม่ผ่านเกณฑ์</th>
+                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">ผ่าน (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stats.byVillage.map((village, index) => (
+                                    <tr key={village.villageNo} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                        <td className="py-3 px-4 text-gray-800 font-medium">
+                                            🏠 หมู่ที่ {village.villageNo}
+                                        </td>
+                                        <td className="text-center py-3 px-4 text-gray-600">{village.totalResidents}</td>
+                                        <td className="text-center py-3 px-4 text-gray-600">{village.surveyedCount}</td>
+                                        <td className="text-center py-3 px-4">
+                                            <span className="badge badge-success">{village.passed}</span>
+                                        </td>
+                                        <td className="text-center py-3 px-4">
+                                            <span className="badge badge-danger">{village.failed}</span>
+                                        </td>
+                                        <td className={`text-center py-3 px-4 font-bold ${getPassedColor(village.passedPercent)}`}>
+                                            {village.passedPercent}%
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 {/* Age Group Cards */}
                 <div className="grid-2 gap-4 mb-6">
                     {stats.byAgeGroup.map((group) => {

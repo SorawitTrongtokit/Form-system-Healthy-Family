@@ -1,143 +1,104 @@
-# 🏥 ระบบแบบฟอร์มครอบครัวสุขภาพดี
+# ระบบแบบฟอร์มครอบครัวสุขภาพดี
 
-ระบบบันทึกข้อมูลสุขภาพประชาชนสำหรับ รพ.สต. (โรงพยาบาลส่งเสริมสุขภาพตำบล)
+## รพ.สต.มะตูม | Matum Health Promotion Hospital
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![Supabase](https://img.shields.io/badge/Supabase-Database-green)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
-
-## ✨ คุณสมบัติหลัก
-
-### 📊 สำหรับ Admin
-
-- จัดการข้อมูลอาสาสมัคร (อสม.)
-- จัดการบ้าน/ครัวเรือน
-- จัดการประชากร
-- Export ข้อมูลเป็น Excel
-- Dashboard สถิติภาพรวม
-
-### 👩‍⚕️ สำหรับอาสาสมัคร
-
-- Login ด้วยเลขบัตรประชาชน
-- กรอกแบบฟอร์มสุขภาพ 5 กลุ่มวัย
-- ดูสถานะผ่าน/ไม่ผ่านเกณฑ์
-
-### 📋 แบบฟอร์มสุขภาพ 5 กลุ่มวัย
-
-| กลุ่มวัย | เกณฑ์ที่ตรวจ |
-|----------|-----------|
-| 0-5 ปี | น้ำหนัก, ส่วนสูง, วัคซีน, พัฒนาการ |
-| 6-14 ปี | น้ำหนัก, ส่วนสูง, วัคซีน, สุขภาพช่องปาก |
-| 15-18 ปี | น้ำหนัก, ส่วนสูง, สุรา, บุหรี่, ยาเสพติด |
-| 19-59 ปี | เบาหวาน, ความดัน, ภาวะพึ่งพิง |
-| 60+ ปี | เบาหวาน, ความดัน, ภาวะพึ่งพิง |
-
-### 🔒 ความปลอดภัย
-
-- Admin Login พร้อม Brute-Force Protection
-- Session Timeout 12 ชั่วโมง
-- Row Level Security (RLS) บน Supabase
+ระบบ PWA สำหรับเก็บข้อมูลสุขภาพชุมชน ใช้งานโดยอาสาสมัครสาธารณสุข (อสม.)
 
 ---
 
-## 🚀 เริ่มต้นใช้งาน
-
-### ความต้องการ
-
-- Node.js 18+
-- บัญชี Supabase (ฟรี)
-- บัญชี Vercel (ฟรี)
-
-### ติดตั้ง Local
+## 🚀 Quick Start
 
 ```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/Form-system-Healthy-Family.git
-cd Form-system-Healthy-Family
-
-# ติดตั้ง dependencies
+# 1. Clone และติดตั้ง
+git clone <repo-url>
+cd real-anamai
 npm install
 
-# สร้างไฟล์ .env.local
+# 2. ตั้งค่า Environment
 cp .env.example .env.local
-# แก้ไขค่า Supabase URL และ Key
+# แก้ไขค่าใน .env.local
 
-# รัน development server
+# 3. รันในโหมด Development
 npm run dev
 ```
 
-เปิด [http://localhost:3000](http://localhost:3000)
+---
+
+## 🔧 Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth |
+| Styling | Tailwind CSS |
+| Deployment | Vercel |
 
 ---
 
-## 📁 โครงสร้างโปรเจค
+## 📁 Project Structure
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── admin/             # หน้า Admin
-│   │   ├── dashboard/     # Dashboard
-│   │   ├── volunteers/    # จัดการอาสาสมัคร
-│   │   ├── houses/        # จัดการบ้าน
-│   │   └── residents/     # จัดการประชากร
-│   ├── api/               # API Routes
-│   ├── dashboard/         # Dashboard สาธารณะ
-│   ├── export/            # Export ข้อมูล
-│   ├── login/             # หน้า Login อาสาสมัคร
-│   ├── survey/            # แบบฟอร์มสุขภาพ
-│   └── volunteer/         # หน้าอาสาสมัคร
-├── lib/                   # Utilities
-│   ├── calculations.ts    # คำนวณ BMI/เกณฑ์สุขภาพ
-│   ├── store.ts          # State Management
-│   ├── supabase.ts       # Supabase Client
-│   ├── types.ts          # TypeScript Types
-│   └── validation.ts     # Validation Functions
-└── public/               # Static Files
-    └── logo.jpg          # โลโก้
+├── app/
+│   ├── admin/           # Admin pages (dashboard, volunteers, houses)
+│   ├── api/             # API routes (login, logout, session)
+│   ├── dashboard/       # Public dashboard
+│   ├── login/           # Volunteer login
+│   ├── survey/          # Health survey form
+│   └── volunteer/       # Volunteer pages
+├── components/          # Shared components
+└── lib/
+    ├── supabase.ts      # Supabase client (anon key)
+    ├── supabase-server.ts # Supabase server (service role)
+    ├── rate-limit.ts    # Database rate limiting
+    └── national-id.ts   # Thai ID utilities
 ```
 
 ---
 
-## ⚙️ Environment Variables
+## 🔐 Security Features
 
-สร้างไฟล์ `.env.local`:
+| Feature | Implementation |
+|---------|----------------|
+| Authentication | Supabase Auth (Admin + Volunteer) |
+| Row Level Security | อสม. เห็นเฉพาะข้อมูลบ้านตัวเอง |
+| Rate Limiting | Database-based (works on serverless) |
+| Audit Logging | PostgreSQL triggers |
+| Session | HTTP-only cookies |
+| CSP Headers | Configured in next.config.ts |
+
+---
+
+## 📋 Environment Variables
 
 ```env
+# Supabase (Required)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-NEXT_PUBLIC_ADMIN_USERNAME=admin
-ADMIN_PASSWORD=YourSecurePassword123!
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbG...
 ```
 
----
-
-## 📖 เอกสารเพิ่มเติม
-
-- [คู่มือการติดตั้ง (DEPLOYMENT_GUIDE.md)](./DEPLOYMENT_GUIDE.md)
+> ⚠️ `SUPABASE_SERVICE_ROLE_KEY` ต้องเก็บเป็นความลับ ห้ามใส่ในโค้ด
 
 ---
 
-## 🛠️ เทคโนโลยีที่ใช้
+## 👥 User Roles
 
-- **Frontend:** Next.js 16, React 19, TypeScript
-- **Styling:** Tailwind CSS, shadcn/ui
-- **Database:** Supabase (PostgreSQL)
-- **Hosting:** Vercel
-- **Icons:** Lucide React
-
----
-
-## 📝 License
-
-MIT License - สามารถนำไปใช้และดัดแปลงได้อย่างอิสระ
+| Role | Login Method | Access |
+|------|--------------|--------|
+| Admin | Email + Password | ข้อมูลทั้งหมด, Export, จัดการ อสม. |
+| อสม. | เลขบัตร + เบอร์โทร | บ้านในความรับผิดชอบเท่านั้น |
 
 ---
 
-## 👨‍💻 ผู้พัฒนา
+## 📖 Documentation
 
-พัฒนาสำหรับ รพ.สต. ในประเทศไทย
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - วิธี Deploy ไป Vercel
+- **[scripts/supabase-rls-secure.sql](./scripts/supabase-rls-secure.sql)** - RLS Policies
 
 ---
 
-**Made with ❤️ for Thai Public Health**
+## 📄 License
+
+© 2024 รพ.สต.มะตูม - Internal Use Only

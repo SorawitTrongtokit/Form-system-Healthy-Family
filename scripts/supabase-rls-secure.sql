@@ -1,6 +1,6 @@
 -- =====================================================
 -- SECURITY MIGRATION: RLS Policies + Audit Logging
--- สำหรับระบบครอบครัวสุขภาพดี รพ.สต.มะตูม
+-- ระบบครอบครัวสุขภาพดี รพ.สต.มะตูม
 -- 
 -- ⚠️ ต้องรัน script นี้ใน Supabase SQL Editor
 -- ⚠️ ก่อนรัน ต้องสร้าง volunteer users ใน Authentication ก่อน
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT,
     user_email TEXT,
-    action TEXT NOT NULL, -- 'SELECT', 'INSERT', 'UPDATE', 'DELETE'
+    action TEXT NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE'
     table_name TEXT NOT NULL,
     record_id TEXT,
     old_data JSONB,
@@ -23,12 +23,18 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS on audit_logs (only admin can read)
+-- Enable RLS on audit_logs
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Only authenticated can read audit_logs" ON audit_logs
-    FOR SELECT USING (auth.uid() IS NOT NULL);
+-- ⚠️ CRITICAL: Only service role can access audit_logs
+-- ไม่มี policy สำหรับ anon key = ไม่มีใครอ่านได้ยกเว้น service role
+-- (เพราะ service role bypass RLS)
 
+-- Drop existing policies first
+DROP POLICY IF EXISTS "System can insert audit_logs" ON audit_logs;
+DROP POLICY IF EXISTS "Only authenticated can read audit_logs" ON audit_logs;
+
+-- System trigger สามารถ insert ได้ (ผ่าน SECURITY DEFINER)
 CREATE POLICY "System can insert audit_logs" ON audit_logs
     FOR INSERT WITH CHECK (true);
 
@@ -46,11 +52,12 @@ CREATE TABLE IF NOT EXISTS rate_limits (
     UNIQUE(key)
 );
 
--- Allow all operations (managed by service role)
+-- Enable RLS
 ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Service role manages rate_limits" ON rate_limits
-    FOR ALL USING (true) WITH CHECK (true);
+-- ⚠️ CRITICAL: NO POLICIES = service role only
+-- rate_limits ต้องจัดการผ่าน service role เท่านั้น
+-- ไม่มี policy = anon/authenticated ไม่สามารถ read/write ได้
 
 -- Create index for fast lookup
 CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON rate_limits(key);
@@ -121,100 +128,129 @@ ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id);
 CREATE INDEX IF NOT EXISTS idx_volunteers_auth_user ON volunteers(auth_user_id);
 
 -- =====================================================
--- PART 5: DROP OLD INSECURE POLICIES
+-- PART 5: DROP ALL OLD POLICIES (Clean slate)
 -- =====================================================
 
--- Drop all public read policies
+-- Drop all existing policies on all tables
 DROP POLICY IF EXISTS "Allow public read on volunteers" ON volunteers;
 DROP POLICY IF EXISTS "Allow public read on houses" ON houses;
 DROP POLICY IF EXISTS "Allow public read on residents" ON residents;
 DROP POLICY IF EXISTS "Allow public read on health_records" ON health_records;
-
--- Drop old insert/update policies
 DROP POLICY IF EXISTS "Allow public insert on health_records" ON health_records;
 DROP POLICY IF EXISTS "Allow public update on health_records" ON health_records;
 DROP POLICY IF EXISTS "Allow public update on houses" ON houses;
+DROP POLICY IF EXISTS "Allow all on volunteers" ON volunteers;
+DROP POLICY IF EXISTS "Allow all on houses" ON houses;
+DROP POLICY IF EXISTS "Allow all on residents" ON residents;
+DROP POLICY IF EXISTS "Allow all on health_records" ON health_records;
+DROP POLICY IF EXISTS "Volunteers can read own data" ON volunteers;
+DROP POLICY IF EXISTS "Volunteers can read assigned houses" ON houses;
+DROP POLICY IF EXISTS "Volunteers can update assigned houses" ON houses;
+DROP POLICY IF EXISTS "Volunteers can read assigned residents" ON residents;
+DROP POLICY IF EXISTS "Volunteers can read assigned health_records" ON health_records;
+DROP POLICY IF EXISTS "Volunteers can insert health_records" ON health_records;
+DROP POLICY IF EXISTS "Volunteers can update health_records" ON health_records;
+DROP POLICY IF EXISTS "Only authenticated can read audit_logs" ON audit_logs;
+DROP POLICY IF EXISTS "Service role manages rate_limits" ON rate_limits;
 
 -- =====================================================
 -- PART 6: CREATE SECURE RLS POLICIES
 -- =====================================================
 
 -- ----- VOLUNTEERS TABLE -----
--- อสม. สามารถดูข้อมูลตัวเอง
-CREATE POLICY "Volunteers can read own data" ON volunteers
+-- อสม. สามารถดูข้อมูลตัวเองเท่านั้น (ผ่าน auth_user_id)
+CREATE POLICY "volunteers_select_own" ON volunteers
     FOR SELECT USING (
-        auth.uid() IS NOT NULL AND auth_user_id = auth.uid()
+        auth.uid() IS NOT NULL 
+        AND auth_user_id = auth.uid()
     );
+
+-- ห้าม UPDATE/DELETE ผ่าน client (เฉพาะ service role)
 
 -- ----- HOUSES TABLE -----
 -- อสม. เห็นเฉพาะบ้านที่ตัวเองดูแล
-CREATE POLICY "Volunteers can read assigned houses" ON houses
+CREATE POLICY "houses_select_assigned" ON houses
     FOR SELECT USING (
-        auth.uid() IS NOT NULL AND (
-            volunteer_id IN (
-                SELECT id FROM volunteers WHERE auth_user_id = auth.uid()
-            )
+        auth.uid() IS NOT NULL 
+        AND volunteer_id IN (
+            SELECT id FROM volunteers WHERE auth_user_id = auth.uid()
         )
     );
 
--- อสม. สามารถแก้ไขบ้านที่ตัวเองดูแล
-CREATE POLICY "Volunteers can update assigned houses" ON houses
+-- อสม. สามารถ update บ้านที่ตัวเองดูแล (เช่น latitude/longitude)
+CREATE POLICY "houses_update_assigned" ON houses
     FOR UPDATE USING (
-        auth.uid() IS NOT NULL AND (
-            volunteer_id IN (
-                SELECT id FROM volunteers WHERE auth_user_id = auth.uid()
-            )
+        auth.uid() IS NOT NULL 
+        AND volunteer_id IN (
+            SELECT id FROM volunteers WHERE auth_user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        -- ป้องกันเปลี่ยน volunteer_id ไปเป็นคนอื่น
+        volunteer_id IN (
+            SELECT id FROM volunteers WHERE auth_user_id = auth.uid()
         )
     );
+
+-- ห้าม INSERT/DELETE houses ผ่าน client (เฉพาะ Admin)
 
 -- ----- RESIDENTS TABLE -----
 -- อสม. เห็นเฉพาะคนในบ้านที่ตัวเองดูแล
-CREATE POLICY "Volunteers can read assigned residents" ON residents
+CREATE POLICY "residents_select_assigned" ON residents
     FOR SELECT USING (
-        auth.uid() IS NOT NULL AND (
-            house_id IN (
-                SELECT h.id FROM houses h
-                JOIN volunteers v ON h.volunteer_id = v.id
-                WHERE v.auth_user_id = auth.uid()
-            )
+        auth.uid() IS NOT NULL 
+        AND house_id IN (
+            SELECT h.id FROM houses h
+            JOIN volunteers v ON h.volunteer_id = v.id
+            WHERE v.auth_user_id = auth.uid()
         )
     );
+
+-- ห้าม INSERT/UPDATE/DELETE residents ผ่าน client (เฉพาะ Admin จัดการข้อมูลประชากร)
 
 -- ----- HEALTH_RECORDS TABLE -----
 -- อสม. เห็นเฉพาะ records ของบ้านที่ตัวเองดูแล
-CREATE POLICY "Volunteers can read assigned health_records" ON health_records
+CREATE POLICY "health_records_select_assigned" ON health_records
     FOR SELECT USING (
-        auth.uid() IS NOT NULL AND (
-            house_id IN (
-                SELECT h.id FROM houses h
-                JOIN volunteers v ON h.volunteer_id = v.id
-                WHERE v.auth_user_id = auth.uid()
-            )
+        auth.uid() IS NOT NULL 
+        AND house_id IN (
+            SELECT h.id FROM houses h
+            JOIN volunteers v ON h.volunteer_id = v.id
+            WHERE v.auth_user_id = auth.uid()
         )
     );
 
--- อสม. สามารถเพิ่ม/แก้ไข records ของบ้านที่ตัวเองดูแล
-CREATE POLICY "Volunteers can insert health_records" ON health_records
+-- อสม. สามารถเพิ่ม records ของบ้านที่ตัวเองดูแล
+CREATE POLICY "health_records_insert_assigned" ON health_records
     FOR INSERT WITH CHECK (
-        auth.uid() IS NOT NULL AND (
-            house_id IN (
-                SELECT h.id FROM houses h
-                JOIN volunteers v ON h.volunteer_id = v.id
-                WHERE v.auth_user_id = auth.uid()
-            )
+        auth.uid() IS NOT NULL 
+        AND house_id IN (
+            SELECT h.id FROM houses h
+            JOIN volunteers v ON h.volunteer_id = v.id
+            WHERE v.auth_user_id = auth.uid()
         )
     );
 
-CREATE POLICY "Volunteers can update health_records" ON health_records
+-- อสม. สามารถแก้ไข records ที่ตัวเองสร้าง
+CREATE POLICY "health_records_update_assigned" ON health_records
     FOR UPDATE USING (
-        auth.uid() IS NOT NULL AND (
-            house_id IN (
-                SELECT h.id FROM houses h
-                JOIN volunteers v ON h.volunteer_id = v.id
-                WHERE v.auth_user_id = auth.uid()
-            )
+        auth.uid() IS NOT NULL 
+        AND house_id IN (
+            SELECT h.id FROM houses h
+            JOIN volunteers v ON h.volunteer_id = v.id
+            WHERE v.auth_user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        -- ป้องกันเปลี่ยน house_id/resident_id ไปเป็นบ้านอื่น
+        house_id IN (
+            SELECT h.id FROM houses h
+            JOIN volunteers v ON h.volunteer_id = v.id
+            WHERE v.auth_user_id = auth.uid()
         )
     );
+
+-- ห้าม DELETE health_records ผ่าน client (เก็บเป็น audit trail)
 
 -- =====================================================
 -- PART 7: Function to mask national ID for display
@@ -235,8 +271,18 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- =====================================================
--- USAGE NOTES:
--- 1. Admin ใช้ SUPABASE_SERVICE_ROLE_KEY (bypass RLS) ผ่าน supabase-server.ts
--- 2. อสม. ใช้ anon key + JWT จาก Supabase Auth
--- 3. ต้อง link volunteers.auth_user_id กับ auth.users.id
+-- SECURITY SUMMARY:
+-- =====================================================
+-- 
+-- | ตาราง          | SELECT        | INSERT        | UPDATE        | DELETE        |
+-- |----------------|---------------|---------------|---------------|---------------|
+-- | volunteers     | ตัวเองเท่านั้น     | Service Role  | Service Role  | Service Role  |
+-- | houses         | บ้านตัวเอง       | Service Role  | บ้านตัวเอง       | Service Role  |
+-- | residents      | บ้านตัวเอง       | Service Role  | Service Role  | Service Role  |
+-- | health_records | บ้านตัวเอง       | บ้านตัวเอง       | บ้านตัวเอง       | Service Role  |
+-- | audit_logs     | Service Role  | Trigger only  | -             | -             |
+-- | rate_limits    | Service Role  | Service Role  | Service Role  | Service Role  |
+-- 
+-- Admin ใช้ SUPABASE_SERVICE_ROLE_KEY ผ่าน supabase-server.ts (bypass RLS)
+-- อสม. ใช้ anon key + JWT จาก Supabase Auth
 -- =====================================================

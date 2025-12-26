@@ -1,0 +1,43 @@
+name: Supabase to Google Drive Backup
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # รันทุกเที่ยงคืน (เวลา UTC)
+  workflow_dispatch: # กดรันเองได้ด้วยตนเอง
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install PostgreSQL Tools
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Dump Database
+        run: |
+          # ใช้ pg_dump ดึงข้อมูลออกมาเป็นไฟล์ .sql
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup.sql
+          # บีบอัดไฟล์เพื่อประหยัดพื้นที่
+          tar -czvf backup_$(date +%Y-%m-%d).tar.gz backup.sql
+
+      - name: Install Rclone
+        run: sudo curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configure Rclone
+        run: |
+          # สร้างไฟล์ตั้งค่า rclone แบบสดๆ
+          mkdir -p ~/.config/rclone
+          cat <<EOF > ~/.config/rclone/rclone.conf
+          [gdrive]
+          type = drive
+          scope = drive
+          service_account_contents = ${{ secrets.GDRIVE_SA_JSON }}
+          EOF
+
+      - name: Upload to Google Drive
+        run: |
+          # ส่งไฟล์ขึ้น Google Drive
+          # แทนที่ 'gdrive:' ตามด้วย ID โฟลเดอร์ที่เก็บไว้ใน Secret
+          rclone copy backup_$(date +%Y-%m-%d).tar.gz gdrive:${{ secrets.GDRIVE_FOLDER_ID }}

@@ -33,6 +33,29 @@ CREATE POLICY "System can insert audit_logs" ON audit_logs
     FOR INSERT WITH CHECK (true);
 
 -- =====================================================
+-- PART 1.5: Rate Limits Table (for Serverless)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key TEXT NOT NULL,           -- 'ip:xxx' or 'id:xxx'
+    attempts INTEGER DEFAULT 0,
+    last_attempt TIMESTAMPTZ DEFAULT NOW(),
+    locked_until TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(key)
+);
+
+-- Allow all operations (managed by service role)
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role manages rate_limits" ON rate_limits
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- Create index for fast lookup
+CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON rate_limits(key);
+
+-- =====================================================
 -- PART 2: Audit Trigger Function (PostgreSQL)
 -- =====================================================
 

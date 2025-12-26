@@ -1,77 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
-
-// Rate limiting storage (in-memory)
-// Note: For Vercel serverless, consider Vercel KV or Redis for persistence
-const loginAttempts: Map<string, { count: number; lastAttempt: number; lockedUntil: number }> = new Map();
-
-// Config
-const MAX_ATTEMPTS_IP = 10;      // Max attempts per IP
-const MAX_ATTEMPTS_ID = 5;       // Max attempts per national_id
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
-const ATTEMPT_WINDOW = 5 * 60 * 1000;    // 5 minutes window
+import {
+    checkRateLimit,
+    recordFailedAttempt,
+    clearAttempts,
+    MAX_ATTEMPTS_IP,
+    MAX_ATTEMPTS_ID
+} from '@/lib/rate-limit';
 
 function getClientIP(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
     return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
 }
 
-function checkRateLimit(key: string, maxAttempts: number): { allowed: boolean; remainingTime: number } {
-    const record = loginAttempts.get(key);
-    const now = Date.now();
-
-    if (!record) return { allowed: true, remainingTime: 0 };
-
-    // Check if locked
-    if (record.lockedUntil > now) {
-        return {
-            allowed: false,
-            remainingTime: Math.ceil((record.lockedUntil - now) / 1000 / 60)
-        };
-    }
-
-    // Reset if outside the attempt window
-    if (now - record.lastAttempt > ATTEMPT_WINDOW) {
-        loginAttempts.delete(key);
-        return { allowed: true, remainingTime: 0 };
-    }
-
-    return { allowed: record.count < maxAttempts, remainingTime: 0 };
-}
-
-function recordFailedAttempt(key: string, maxAttempts: number): { locked: boolean; attemptsLeft: number } {
-    const now = Date.now();
-    const record = loginAttempts.get(key) || { count: 0, lastAttempt: now, lockedUntil: 0 };
-
-    // Reset count if outside the attempt window
-    if (now - record.lastAttempt > ATTEMPT_WINDOW) {
-        record.count = 0;
-    }
-
-    record.count++;
-    record.lastAttempt = now;
-
-    if (record.count >= maxAttempts) {
-        record.lockedUntil = now + LOCKOUT_DURATION;
-        loginAttempts.set(key, record);
-        return { locked: true, attemptsLeft: 0 };
-    }
-
-    loginAttempts.set(key, record);
-    return { locked: false, attemptsLeft: maxAttempts - record.count };
-}
-
-function clearAttempts(key: string): void {
-    loginAttempts.delete(key);
-}
-
 export async function POST(request: NextRequest) {
     const ip = getClientIP(request);
     const ipKey = `ip:${ip}`;
 
+    // Create Supabase clients
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+        console.error('Missing Supabase environment variables');
+        return NextResponse.json(
+            { success: false, error: 'ระบบมีปัญหา กรุณาติดต่อผู้ดูแล' },
+            { status: 500 }
+        );
+    }
+
+    // Use service client for rate limiting and data access (bypass RLS)
+    const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    });
+
     // Check IP rate limit first
-    const ipCheck = checkRateLimit(ipKey, MAX_ATTEMPTS_IP);
+    const ipCheck = await checkRateLimit(serviceClient, ipKey, MAX_ATTEMPTS_IP);
     if (!ipCheck.allowed) {
         return NextResponse.json(
             { success: false, error: `พยายามเข้าสู่ระบบมากเกินไป กรุณารอ ${ipCheck.remainingTime} นาที` },
@@ -96,7 +61,7 @@ export async function POST(request: NextRequest) {
         const nationalIdKey = `id:${cleanNationalId}`;
 
         // Check national_id rate limit
-        const idCheck = checkRateLimit(nationalIdKey, MAX_ATTEMPTS_ID);
+        const idCheck = await checkRateLimit(serviceClient, nationalIdKey, MAX_ATTEMPTS_ID);
         if (!idCheck.allowed) {
             return NextResponse.json(
                 { success: false, error: `เลขบัตรนี้ถูกล็อค กรุณารอ ${idCheck.remainingTime} นาที` },
@@ -106,7 +71,7 @@ export async function POST(request: NextRequest) {
 
         // Validate formats
         if (!/^\d{13}$/.test(cleanNationalId)) {
-            recordFailedAttempt(ipKey, MAX_ATTEMPTS_IP);
+            await recordFailedAttempt(serviceClient, ipKey, MAX_ATTEMPTS_IP);
             return NextResponse.json(
                 { success: false, error: 'เลขบัตรประชาชนต้องเป็นตัวเลข 13 หลัก' },
                 { status: 400 }
@@ -114,30 +79,12 @@ export async function POST(request: NextRequest) {
         }
 
         if (!/^0\d{9}$/.test(cleanPhone)) {
-            recordFailedAttempt(ipKey, MAX_ATTEMPTS_IP);
+            await recordFailedAttempt(serviceClient, ipKey, MAX_ATTEMPTS_IP);
             return NextResponse.json(
                 { success: false, error: 'เบอร์โทรศัพท์ต้องเป็นตัวเลข 10 หลัก เริ่มต้นด้วย 0' },
                 { status: 400 }
             );
         }
-
-        // Create Supabase clients
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-            console.error('Missing Supabase environment variables');
-            return NextResponse.json(
-                { success: false, error: 'ระบบมีปัญหา กรุณาติดต่อผู้ดูแล' },
-                { status: 500 }
-            );
-        }
-
-        // Use service client to query volunteer data (bypass RLS)
-        const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
-            auth: { autoRefreshToken: false, persistSession: false }
-        });
 
         // Query volunteer by national_id
         const { data: volunteer, error: queryError } = await serviceClient
@@ -147,8 +94,8 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (queryError || !volunteer) {
-            recordFailedAttempt(ipKey, MAX_ATTEMPTS_IP);
-            recordFailedAttempt(nationalIdKey, MAX_ATTEMPTS_ID);
+            await recordFailedAttempt(serviceClient, ipKey, MAX_ATTEMPTS_IP);
+            await recordFailedAttempt(serviceClient, nationalIdKey, MAX_ATTEMPTS_ID);
             return NextResponse.json(
                 { success: false, error: 'ไม่พบข้อมูลอาสาสมัครในระบบ กรุณาติดต่อ รพ.สต.' },
                 { status: 401 }
@@ -159,7 +106,7 @@ export async function POST(request: NextRequest) {
         const volunteerPhone = (volunteer.phone || '').replace(/[\s-]/g, '').replace(/^\+66/, '0').replace(/^66/, '0');
 
         if (volunteerPhone !== cleanPhone) {
-            const result = recordFailedAttempt(nationalIdKey, MAX_ATTEMPTS_ID);
+            const result = await recordFailedAttempt(serviceClient, nationalIdKey, MAX_ATTEMPTS_ID);
             return NextResponse.json(
                 {
                     success: false,
@@ -172,8 +119,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Clear rate limit on successful verification
-        clearAttempts(ipKey);
-        clearAttempts(nationalIdKey);
+        await clearAttempts(serviceClient, ipKey);
+        await clearAttempts(serviceClient, nationalIdKey);
 
         // Check if volunteer has Supabase Auth user linked
         if (volunteer.auth_user_id) {

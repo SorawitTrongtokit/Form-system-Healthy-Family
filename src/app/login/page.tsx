@@ -194,9 +194,14 @@ export default function LoginPage() {
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-white/60 text-sm mt-6">
-                    © 2024 รพ.สต.มะตูม | ระบบบันทึกข้อมูลสุขภาพประชาชน
-                </p>
+                <div className="text-center mt-6">
+                    <p className="text-white/60 text-sm">
+                        © 2024 รพ.สต.มะตูม | ระบบบันทึกข้อมูลสุขภาพประชาชน
+                    </p>
+                    <Link href="/privacy" className="text-white/50 hover:text-white/80 text-xs mt-2 inline-block">
+                        🔐 นโยบายความเป็นส่วนตัว
+                    </Link>
+                </div>
             </div>
         </main>
     );

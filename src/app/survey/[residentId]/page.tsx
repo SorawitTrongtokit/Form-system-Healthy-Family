@@ -40,6 +40,7 @@ export default function SurveyPage() {
 
     // Form state
     const [formData, setFormData] = useState<Partial<HealthRecord>>({});
+    const [pdpaConsent, setPdpaConsent] = useState(false);
 
     // Derived values
     const [age, setAge] = useState(0);
@@ -158,6 +159,11 @@ export default function SurveyPage() {
             default:
                 return false;
         }
+    };
+
+    // ตรวจสอบว่ายินยอม PDPA แล้วหรือไม่
+    const canSubmit = (): boolean => {
+        return pdpaConsent && isFormComplete();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -727,17 +733,49 @@ export default function SurveyPage() {
                         </>
                     )}
 
+                    {/* PDPA Consent */}
+                    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <h4 className="font-bold text-amber-800 mb-2">📋 ความยินยอมในการเก็บรวบรวมข้อมูล (PDPA)</h4>
+                        <div className="text-sm text-gray-700 mb-3 max-h-32 overflow-y-auto">
+                            <p className="mb-2">
+                                ข้าพเจ้ายินยอมให้ รพ.สต.มะตูม และอาสาสมัครสาธารณสุขประจำหมู่บ้าน (อสม.)
+                                เก็บรวบรวม ใช้ และเปิดเผยข้อมูลสุขภาพของข้าพเจ้าตามวัตถุประสงค์ดังนี้:
+                            </p>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li>เพื่อการดูแลสุขภาพและติดตามผลการรักษา</li>
+                                <li>เพื่อการจัดทำรายงานสถานะสุขภาพชุมชน</li>
+                                <li>เพื่อการวิจัยและพัฒนาระบบสาธารณสุข</li>
+                            </ul>
+                            <p className="mt-2 text-gray-500">
+                                ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)
+                            </p>
+                        </div>
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={pdpaConsent}
+                                onChange={(e) => setPdpaConsent(e.target.checked)}
+                                className="mt-1 w-5 h-5 rounded border-amber-400 text-green-600 focus:ring-green-500"
+                            />
+                            <span className="text-sm font-medium text-gray-800">
+                                ข้าพเจ้าได้อ่านและยินยอมให้เก็บรวบรวม ใช้ และเปิดเผยข้อมูลสุขภาพของข้าพเจ้า
+                            </span>
+                        </label>
+                    </div>
+
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={saving || !isFormComplete()}
-                        className={`btn w-full mt-6 ${isFormComplete() ? 'btn-primary' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                        disabled={saving || !canSubmit()}
+                        className={`btn w-full mt-6 ${canSubmit() ? 'btn-primary' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                     >
                         {saving ? (
                             <span className="flex items-center gap-2">
                                 <div className="loading-spinner w-5 h-5"></div>
                                 กำลังบันทึก...
                             </span>
+                        ) : !pdpaConsent ? (
+                            '⚠️ กรุณายินยอม PDPA ก่อนบันทึก'
                         ) : !isFormComplete() ? (
                             '⚠️ กรุณากรอกข้อมูลให้ครบ'
                         ) : (

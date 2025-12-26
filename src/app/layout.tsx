@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import CookieConsent from "@/components/CookieConsent";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -31,6 +32,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <CookieConsent />
       </body>
     </html>
   );

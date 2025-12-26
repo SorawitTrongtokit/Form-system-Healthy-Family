@@ -38,6 +38,56 @@ DROP POLICY IF EXISTS "Only authenticated can read audit_logs" ON audit_logs;
 CREATE POLICY "System can insert audit_logs" ON audit_logs
     FOR INSERT WITH CHECK (true);
 
+-- Create index for faster date-based queries
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+
+-- =====================================================
+-- PART 1.2: Log Retention (90 วัน ตาม พ.ร.บ. คอมพิวเตอร์)
+-- =====================================================
+
+-- Function: ลบ logs ที่เก่าเกิน 90 วัน
+CREATE OR REPLACE FUNCTION cleanup_old_logs()
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_audit INTEGER;
+    deleted_rate INTEGER;
+BEGIN
+    -- ลบ audit_logs ที่เก่าเกิน 90 วัน
+    DELETE FROM audit_logs 
+    WHERE created_at < NOW() - INTERVAL '90 days';
+    GET DIAGNOSTICS deleted_audit = ROW_COUNT;
+    
+    -- ลบ rate_limits ที่เก่าเกิน 1 วัน (ไม่จำเป็นต้องเก็บนาน)
+    DELETE FROM rate_limits 
+    WHERE last_attempt < NOW() - INTERVAL '1 day';
+    GET DIAGNOSTICS deleted_rate = ROW_COUNT;
+    
+    -- Log การลบ (optional - สำหรับ monitoring)
+    RAISE NOTICE 'Cleanup completed: % audit_logs, % rate_limits deleted', deleted_audit, deleted_rate;
+    
+    RETURN deleted_audit + deleted_rate;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- PART 1.3: Auto-Cleanup (ใช้ pg_cron หรือ Supabase Edge Function)
+-- =====================================================
+-- 
+-- วิธีที่ 1: ใช้ Supabase Dashboard → Database → Extensions → Enable pg_cron
+-- แล้วรัน:
+-- SELECT cron.schedule('cleanup-logs', '0 3 * * *', 'SELECT cleanup_old_logs()');
+-- (รันทุกวัน เวลา 03:00)
+--
+-- วิธีที่ 2: สร้าง Supabase Edge Function เรียก cleanup_old_logs() ทุกวัน
+--
+-- วิธีที่ 3: เรียก cleanup_old_logs() จาก Admin Dashboard เป็นประจำ
+-- =====================================================
+
+-- ⚠️ TIMEZONE NOTICE:
+-- Supabase ใช้ UTC เป็น default
+-- created_at ใช้ TIMESTAMPTZ ซึ่งจะแปลง timezone อัตโนมัติ
+-- เวลาใน audit_logs จะถูกต้องแม้ server ใช้ UTC
+
 -- =====================================================
 -- PART 1.5: Rate Limits Table (for Serverless)
 -- =====================================================

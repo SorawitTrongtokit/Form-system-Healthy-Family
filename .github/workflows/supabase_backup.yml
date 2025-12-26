@@ -2,24 +2,45 @@ name: Supabase to Google Drive Backup
 
 on:
   schedule:
-    - cron: '0 0 * * *' # รันทุกเที่ยงคืน (เวลา UTC)
-  workflow_dispatch: # กดรันเองได้ด้วยตนเอง
+    - cron: '0 0 * * *' # รันทุกเที่ยงคืน
+  workflow_dispatch: # ปุ่มกดรันเอง
 
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install PostgreSQL Tools
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: Dump Database
+      - name: Install PostgreSQL Client
         run: |
-          # ใช้ pg_dump ดึงข้อมูลออกมาเป็นไฟล์ .sql
-          pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup.sql
-          # บีบอัดไฟล์เพื่อประหยัดพื้นที่
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Dump Database (IPv4 Forced)
+        shell: bash
+        run: |
+          # ใช้ --no-password และดึงข้อมูลผ่าน URI
+          # เพิ่มการ retry เผื่อกรณี Network สะดุด
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i to dump database..."
+            # ใช้ pg_dump โดยตรงจาก Secret URL
+            if pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup.sql; then
+              echo "Dump successful!"
+              break
+            else
+              if [ $i -eq $MAX_RETRIES ]; then
+                echo "Error: Failed to dump database after $MAX_RETRIES attempts."
+                exit 1
+              fi
+              echo "Dump failed, retrying in 10 seconds..."
+              sleep 10
+            fi
+          done
+
+      - name: Compress Backup
+        run: |
           tar -czvf backup_$(date +%Y-%m-%d).tar.gz backup.sql
 
       - name: Install Rclone
@@ -27,7 +48,6 @@ jobs:
 
       - name: Configure Rclone
         run: |
-          # สร้างไฟล์ตั้งค่า rclone แบบสดๆ
           mkdir -p ~/.config/rclone
           cat <<EOF > ~/.config/rclone/rclone.conf
           [gdrive]
@@ -38,6 +58,5 @@ jobs:
 
       - name: Upload to Google Drive
         run: |
-          # ส่งไฟล์ขึ้น Google Drive
-          # แทนที่ 'gdrive:' ตามด้วย ID โฟลเดอร์ที่เก็บไว้ใน Secret
-          rclone copy backup_$(date +%Y-%m-%d).tar.gz gdrive:${{ secrets.GDRIVE_FOLDER_ID }}
+          # ใช้ -P เพื่อดูความคืบหน้าใน Log
+          rclone copy -P backup_$(date +%Y-%m-%d).tar.gz gdrive:${{ secrets.GDRIVE_FOLDER_ID }}

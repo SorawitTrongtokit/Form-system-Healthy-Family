@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 // Rate limiting storage (in-memory, resets on server restart)
+// Note: For Vercel serverless, this may reset between invocations
+// Consider using Redis or Vercel KV for production
 const loginAttempts: Map<string, { count: number; lastAttempt: number; lockedUntil: number }> = new Map();
 
 // Config
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 const ATTEMPT_WINDOW = 5 * 60 * 1000; // 5 minutes window
+const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12 hours
 
 function getClientIP(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
@@ -77,28 +81,38 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { username, password } = await request.json();
+        const { email, password } = await request.json();
 
-        // Get credentials from environment variables
-        const validUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'admin';
-        const validPassword = process.env.ADMIN_PASSWORD || 'Admin2024!';
+        // Validate input
+        if (!email || !password) {
+            return NextResponse.json(
+                { success: false, error: 'กรุณากรอก Email และรหัสผ่าน' },
+                { status: 400 }
+            );
+        }
 
-        if (username === validUsername && password === validPassword) {
-            // Clear failed attempts on successful login
-            clearAttempts(ip);
+        // Validate environment variables
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-            // Generate session token with expiry
-            const sessionData = {
-                loggedIn: true,
-                loginTime: Date.now(),
-                expiresAt: Date.now() + (12 * 60 * 60 * 1000) // 12 hours
-            };
+        if (!supabaseUrl || !supabaseAnonKey) {
+            console.error('Missing Supabase environment variables');
+            return NextResponse.json(
+                { success: false, error: 'ระบบมีปัญหา กรุณาติดต่อผู้ดูแล' },
+                { status: 500 }
+            );
+        }
 
-            return NextResponse.json({
-                success: true,
-                session: sessionData
-            });
-        } else {
+        // Create Supabase client for authentication
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // Sign in with Supabase Auth
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (error || !data.session) {
             // Record failed attempt
             const result = recordFailedAttempt(ip);
 
@@ -115,14 +129,53 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     success: false,
-                    error: `ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (เหลือ ${result.attemptsLeft} ครั้ง)`
+                    error: `Email หรือรหัสผ่านไม่ถูกต้อง (เหลือ ${result.attemptsLeft} ครั้ง)`
                 },
                 { status: 401 }
             );
         }
-    } catch {
+
+        // Clear failed attempts on successful login
+        clearAttempts(ip);
+
+        // Create session data
+        const sessionData = {
+            loggedIn: true,
+            loginTime: Date.now(),
+            expiresAt: Date.now() + SESSION_DURATION,
+            email: data.user.email
+        };
+
+        // Create response with cookies
+        const response = NextResponse.json({
+            success: true,
+            user: {
+                email: data.user.email,
+                id: data.user.id
+            }
+        });
+
+        // Set secure HTTP-only cookies for session
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            maxAge: SESSION_DURATION / 1000, // in seconds
+            path: '/'
+        };
+
+        response.cookies.set('sb-access-token', data.session.access_token, cookieOptions);
+        response.cookies.set('sb-refresh-token', data.session.refresh_token, cookieOptions);
+        response.cookies.set('admin-session', JSON.stringify(sessionData), {
+            ...cookieOptions,
+            httpOnly: false // Allow JS to read session expiry for UI purposes
+        });
+
+        return response;
+    } catch (error) {
+        console.error('Login error:', error);
         return NextResponse.json(
-            { success: false, error: 'เกิดข้อผิดพลาด' },
+            { success: false, error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' },
             { status: 500 }
         );
     }

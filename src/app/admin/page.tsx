@@ -1,45 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
-
-// Check if session is valid
+// Check if session is valid using cookies
 function isSessionValid(): boolean {
     if (typeof window === 'undefined') return false;
 
-    const sessionStr = localStorage.getItem('adminSession');
-    if (!sessionStr) return false;
+    // Check for admin-session cookie (readable by JS)
+    const cookies = document.cookie.split(';');
+    const sessionCookie = cookies.find(c => c.trim().startsWith('admin-session='));
+
+    if (!sessionCookie) return false;
 
     try {
-        const session = JSON.parse(sessionStr);
+        const sessionValue = decodeURIComponent(sessionCookie.split('=')[1]);
+        const session = JSON.parse(sessionValue);
         return session.loggedIn && session.expiresAt > Date.now();
     } catch {
         return false;
     }
 }
 
-export default function AdminLoginPage() {
-    const [username, setUsername] = useState('');
+function AdminLoginContent() {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [checkingSession, setCheckingSession] = useState(true);
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     // Check if already logged in
     useEffect(() => {
         if (isSessionValid()) {
-            router.push('/admin/dashboard');
+            const redirect = searchParams.get('redirect') || '/admin/dashboard';
+            router.push(redirect);
         } else {
-            // Clear invalid session
-            localStorage.removeItem('adminSession');
-            localStorage.removeItem('adminLoggedIn');
             setCheckingSession(false);
         }
-    }, [router]);
+    }, [router, searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,18 +51,16 @@ export default function AdminLoginPage() {
             const response = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
 
             if (data.success) {
-                // Save session
-                localStorage.setItem('adminSession', JSON.stringify(data.session));
-                localStorage.setItem('adminLoggedIn', 'true');
-                router.push('/admin/dashboard');
+                const redirect = searchParams.get('redirect') || '/admin/dashboard';
+                router.push(redirect);
             } else {
-                setError(data.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+                setError(data.error || 'Email หรือรหัสผ่านไม่ถูกต้อง');
                 setLoading(false);
             }
         } catch {
@@ -114,14 +113,14 @@ export default function AdminLoginPage() {
 
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label className="form-label">ชื่อผู้ใช้</label>
+                            <label className="form-label">Email</label>
                             <input
-                                type="text"
+                                type="email"
                                 className="input"
-                                placeholder="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                autoComplete="username"
+                                placeholder="admin@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="email"
                             />
                         </div>
 
@@ -130,7 +129,7 @@ export default function AdminLoginPage() {
                             <input
                                 type="password"
                                 className="input"
-                                placeholder="password"
+                                placeholder="รหัสผ่าน"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 autoComplete="current-password"
@@ -145,7 +144,7 @@ export default function AdminLoginPage() {
 
                         <button
                             type="submit"
-                            disabled={loading || !username || !password}
+                            disabled={loading || !email || !password}
                             className="btn btn-primary w-full"
                         >
                             {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
@@ -163,5 +162,20 @@ export default function AdminLoginPage() {
                 </p>
             </div>
         </main>
+    );
+}
+
+export default function AdminLoginPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-600 to-purple-700">
+                <div className="text-center">
+                    <div className="loading-spinner mx-auto mb-4"></div>
+                    <p className="text-white/80">กำลังโหลด...</p>
+                </div>
+            </main>
+        }>
+            <AdminLoginContent />
+        </Suspense>
     );
 }

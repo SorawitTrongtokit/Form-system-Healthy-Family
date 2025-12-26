@@ -83,11 +83,21 @@ export default function AdminHouses() {
 
         loadDataRef.current = loadData;
 
-        if (typeof window !== 'undefined' && !localStorage.getItem('adminLoggedIn')) {
-            router.push('/admin');
-            return;
+        // Validate session with server
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/session');
+                const data = await response.json();
+                if (!data.valid) {
+                    router.push('/admin');
+                    return;
+                }
+                loadData();
+            } catch {
+                router.push('/admin');
+            }
         }
-        loadData();
+        checkAuth();
     }, [router]);
 
     // Get volunteer by ID

@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { validateThaiNationalId } from '@/lib/validation';
-import { loginAsync, initializeStore, restoreSession } from '@/lib/store';
+import { initializeStore, restoreSession } from '@/lib/store';
 
 export default function LoginPage() {
     const [nationalId, setNationalId] = useState('');
+    const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [checkingSession, setCheckingSession] = useState(true);
@@ -40,13 +41,36 @@ export default function LoginPage() {
             return;
         }
 
-        // Try to login (now async)
-        const volunteer = await loginAsync(nationalId);
+        // Validate phone
+        if (!phone || phone.length !== 10) {
+            setError('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก');
+            setLoading(false);
+            return;
+        }
 
-        if (volunteer) {
-            router.push('/volunteer');
-        } else {
-            setError('ไม่พบข้อมูลอาสาสมัครในระบบ กรุณาติดต่อ รพ.สต.');
+        try {
+            // Call the volunteer login API
+            const response = await fetch('/api/volunteer/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ national_id: nationalId, phone })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Save session to localStorage
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('volunteerId', data.volunteer.id);
+                    localStorage.setItem('volunteerNationalId', data.volunteer.national_id);
+                }
+                router.push('/volunteer');
+            } else {
+                setError(data.error || 'เลขบัตรหรือเบอร์โทรศัพท์ไม่ถูกต้อง');
+                setLoading(false);
+            }
+        } catch {
+            setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             setLoading(false);
         }
     };
@@ -116,6 +140,28 @@ export default function LoginPage() {
                             </p>
                         </div>
 
+                        <div className="form-group">
+                            <label className="form-label">
+                                เบอร์โทรศัพท์ 10 หลัก
+                            </label>
+                            <input
+                                type="tel"
+                                className="input"
+                                placeholder="08X-XXX-XXXX"
+                                value={phone}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    setPhone(value);
+                                    setError('');
+                                }}
+                                maxLength={10}
+                                autoComplete="tel"
+                            />
+                            <p className="text-sm text-gray-500 mt-2">
+                                {phone.length}/10 หลัก
+                            </p>
+                        </div>
+
                         {error && (
                             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                                 ⚠️ {error}
@@ -124,7 +170,7 @@ export default function LoginPage() {
 
                         <button
                             type="submit"
-                            disabled={loading || nationalId.length !== 13}
+                            disabled={loading || nationalId.length !== 13 || phone.length !== 10}
                             className="btn btn-primary w-full"
                         >
                             {loading ? (
@@ -141,7 +187,10 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-
+                    {/* Security notice */}
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-600 text-center">
+                        🔒 เพื่อความปลอดภัย กรุณากรอกเบอร์โทรศัพท์ที่ลงทะเบียนไว้
+                    </div>
                 </div>
 
                 {/* Footer */}

@@ -12,16 +12,12 @@ interface AdminStats {
     healthRecords: number;
 }
 
-// Check if session is valid
-function isSessionValid(): boolean {
-    if (typeof window === 'undefined') return false;
-
-    const sessionStr = localStorage.getItem('adminSession');
-    if (!sessionStr) return false;
-
+// Check if session is valid using cookies
+async function validateSession(): Promise<boolean> {
     try {
-        const session = JSON.parse(sessionStr);
-        return session.loggedIn && session.expiresAt > Date.now();
+        const response = await fetch('/api/admin/session');
+        const data = await response.json();
+        return data.valid === true;
     } catch {
         return false;
     }
@@ -30,18 +26,31 @@ function isSessionValid(): boolean {
 export default function AdminDashboard() {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userEmail, setUserEmail] = useState<string>('');
     const router = useRouter();
 
     useEffect(() => {
-        // Check if admin session is valid
-        if (!isSessionValid()) {
-            localStorage.removeItem('adminSession');
-            localStorage.removeItem('adminLoggedIn');
-            router.push('/admin');
-            return;
-        }
+        async function checkAuthAndLoadStats() {
+            // Validate session with server
+            const isValid = await validateSession();
 
-        async function loadStats() {
+            if (!isValid) {
+                router.push('/admin');
+                return;
+            }
+
+            // Get user email from session
+            try {
+                const response = await fetch('/api/admin/session');
+                const data = await response.json();
+                if (data.user?.email) {
+                    setUserEmail(data.user.email);
+                }
+            } catch {
+                // Ignore
+            }
+
+            // Load stats
             const [volunteers, houses, residents, records] = await Promise.all([
                 supabase.from('volunteers').select('id', { count: 'exact' }),
                 supabase.from('houses').select('id', { count: 'exact' }),
@@ -58,13 +67,14 @@ export default function AdminDashboard() {
             setLoading(false);
         }
 
-        loadStats();
+        checkAuthAndLoadStats();
     }, [router]);
 
-    const handleLogout = () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('adminSession');
-            localStorage.removeItem('adminLoggedIn');
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/admin/logout', { method: 'POST' });
+        } catch {
+            // Continue even if API fails
         }
         router.push('/admin');
     };
@@ -87,7 +97,10 @@ export default function AdminDashboard() {
                 <div className="container mx-auto flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold">⚙️ Admin Dashboard</h1>
-                        <p className="text-sm text-white/80">จัดการระบบ รพ.สต.มะตูม</p>
+                        <p className="text-sm text-white/80">
+                            จัดการระบบ รพ.สต.มะตูม
+                            {userEmail && <span className="ml-2">({userEmail})</span>}
+                        </p>
                     </div>
                     <div className="flex items-center gap-4">
                         <Link href="/" className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">

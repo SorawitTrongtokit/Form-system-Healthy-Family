@@ -48,31 +48,23 @@ export default function ExportPage() {
     const [data, setData] = useState<ExportData | null>(null);
     const [selectedVillage, setSelectedVillage] = useState<number>(1);
 
-    // Check if session is valid
-    function isSessionValid(): boolean {
-        if (typeof window === 'undefined') return false;
-
-        const sessionStr = localStorage.getItem('adminSession');
-        if (!sessionStr) return false;
-
-        try {
-            const session = JSON.parse(sessionStr);
-            return session.loggedIn && session.expiresAt > Date.now();
-        } catch {
-            return false;
-        }
-    }
-
-    // Check admin authentication
+    // Check admin authentication via server API
     useEffect(() => {
-        if (!isSessionValid()) {
-            localStorage.removeItem('adminSession');
-            localStorage.removeItem('adminLoggedIn');
-            router.push('/admin');
-        } else {
-            setIsAdmin(true);
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/session');
+                const data = await response.json();
+                if (!data.valid) {
+                    router.push('/admin');
+                    return;
+                }
+                setIsAdmin(true);
+            } catch {
+                router.push('/admin');
+            }
+            setCheckingAuth(false);
         }
-        setCheckingAuth(false);
+        checkAuth();
     }, [router]);
 
     // Helper function to fetch all rows using pagination (Supabase limits to 1000 rows per request)

@@ -126,4 +126,4 @@ git push origin main
 
 ## 📞 Support
 
-ติดต่อผู้พัฒนา: [Your Contact Info]
+ติดต่อผู้พัฒนา: [sorawit.tro@pccpl.ac.th]

@@ -82,16 +82,9 @@ ALTER TABLE houses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE residents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE health_records ENABLE ROW LEVEL SECURITY;
 
--- Create policies for public read (for demo)
-CREATE POLICY "Allow public read on volunteers" ON volunteers FOR SELECT USING (true);
-CREATE POLICY "Allow public read on houses" ON houses FOR SELECT USING (true);
-CREATE POLICY "Allow public read on residents" ON residents FOR SELECT USING (true);
-CREATE POLICY "Allow public read on health_records" ON health_records FOR SELECT USING (true);
-
--- Create policies for insert/update (for authenticated or anon for demo)
-CREATE POLICY "Allow public insert on health_records" ON health_records FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update on health_records" ON health_records FOR UPDATE USING (true);
-CREATE POLICY "Allow public update on houses" ON houses FOR UPDATE USING (true);
+-- ⚠️ IMPORTANT: RLS Policies are NOT created here.
+-- Run scripts/supabase-rls-secure.sql after this file to set up secure policies.
+-- DO NOT use "USING (true)" policies in production!
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_houses_volunteer ON houses(volunteer_id);

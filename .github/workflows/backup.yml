@@ -1,0 +1,73 @@
+name: Backup Supabase to Google Drive
+
+on:
+  schedule:
+    # Run every day at 2:00 AM UTC (9:00 AM Thailand)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client rclone
+
+      - name: Configure Rclone for Google Drive
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+
+      - name: Create backup directory
+        run: mkdir -p backups
+
+      - name: Backup Supabase Database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # Generate filename with timestamp
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="backups/supabase_backup_${TIMESTAMP}.sql"
+          
+          # Run pg_dump
+          pg_dump "$SUPABASE_DB_URL" \
+            --no-owner \
+            --no-privileges \
+            --clean \
+            --if-exists \
+            -f "$BACKUP_FILE"
+          
+          # Compress the backup
+          gzip "$BACKUP_FILE"
+          
+          echo "BACKUP_FILE=${BACKUP_FILE}.gz" >> $GITHUB_ENV
+          echo "✅ Backup created: ${BACKUP_FILE}.gz"
+
+      - name: Upload to Google Drive
+        run: |
+          # Upload to Google Drive folder
+          rclone copy "${{ env.BACKUP_FILE }}" gdrive:Backups/anamai-db/
+          echo "✅ Uploaded to Google Drive"
+
+      - name: Cleanup old backups on Drive (keep last 30)
+        run: |
+          # List files and delete old ones (keep 30 most recent)
+          rclone lsf gdrive:Backups/anamai-db/ --files-only | sort -r | tail -n +31 | while read file; do
+            rclone delete "gdrive:Backups/anamai-db/$file"
+            echo "🗑️ Deleted old backup: $file"
+          done
+
+      - name: Send notification (optional)
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Backup completed successfully"
+          else
+            echo "❌ Backup failed"
+          fi

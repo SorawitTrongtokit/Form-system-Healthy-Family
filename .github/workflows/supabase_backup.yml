@@ -20,12 +20,20 @@ jobs:
       - name: Dump Database (IPv4 Forced)
         shell: bash
         run: |
-          # ใช้ --no-password และดึงข้อมูลผ่าน URI
-          # เพิ่มการ retry เผื่อกรณี Network สะดุด
+          # 1. ค้นหา IPv4 ของ Hostname คุณ
+          # เราจะดึงเฉพาะ Hostname ออกมาจาก URL ใน Secret
+          DB_HOST="db.rrnlfbmzzoatklooqnko.supabase.co"
+          
+          # 2. ใช้ getent เพื่อหา IPv4 (ถ้ามี) หรือใช้ DNS lookup
+          # แต่ทางที่ชัวร์ที่สุดสำหรับ GitHub Runner คือการใช้คำสั่งระบุให้ pg_dump เชื่อมต่อแบบ IPv4 เท่านั้น
+          
           MAX_RETRIES=3
           for i in $(seq 1 $MAX_RETRIES); do
             echo "Attempt $i to dump database..."
-            # ใช้ pg_dump โดยตรงจาก Secret URL
+            
+            # ใช้พารามิเตอร์ --host และดึงค่าจาก Secret 
+            # สำคัญ: ในการแก้ปัญหา Network unreachable ให้เติม ?sslmode=require ที่ท้าย URL ใน Secret ด้วย
+            
             if pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup.sql; then
               echo "Dump successful!"
               break

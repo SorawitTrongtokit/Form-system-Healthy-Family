@@ -4,20 +4,12 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-// Check if session is valid using cookies
-function isSessionValid(): boolean {
-    if (typeof window === 'undefined') return false;
-
-    // Check for admin-session cookie (readable by JS)
-    const cookies = document.cookie.split(';');
-    const sessionCookie = cookies.find(c => c.trim().startsWith('admin-session='));
-
-    if (!sessionCookie) return false;
-
+// Validate session with server API (not just client cookie)
+async function validateSession(): Promise<boolean> {
     try {
-        const sessionValue = decodeURIComponent(sessionCookie.split('=')[1]);
-        const session = JSON.parse(sessionValue);
-        return session.loggedIn && session.expiresAt > Date.now();
+        const response = await fetch('/api/admin/session');
+        const data = await response.json();
+        return data.valid === true;
     } catch {
         return false;
     }
@@ -32,14 +24,18 @@ function AdminLoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Check if already logged in
+    // Check if already logged in using server API
     useEffect(() => {
-        if (isSessionValid()) {
-            const redirect = searchParams.get('redirect') || '/admin/dashboard';
-            router.push(redirect);
-        } else {
-            setCheckingSession(false);
+        async function checkSession() {
+            const isValid = await validateSession();
+            if (isValid) {
+                const redirect = searchParams.get('redirect') || '/admin/dashboard';
+                router.replace(redirect);
+            } else {
+                setCheckingSession(false);
+            }
         }
+        checkSession();
     }, [router, searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +54,7 @@ function AdminLoginContent() {
 
             if (data.success) {
                 const redirect = searchParams.get('redirect') || '/admin/dashboard';
-                router.push(redirect);
+                router.replace(redirect);
             } else {
                 setError(data.error || 'Email หรือรหัสผ่านไม่ถูกต้อง');
                 setLoading(false);

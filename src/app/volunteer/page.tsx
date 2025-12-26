@@ -21,7 +21,7 @@ export default function VolunteerDashboard() {
             }
 
             if (!vol) {
-                router.push('/');
+                router.push('/login');
                 return;
             }
 

@@ -59,10 +59,10 @@ export default function LoginPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Save session to localStorage
+                // Save session to localStorage (only id, not sensitive data)
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('volunteerId', data.volunteer.id);
-                    localStorage.setItem('volunteerNationalId', data.volunteer.national_id);
+                    localStorage.setItem('volunteerName', data.volunteer.name || '');
                 }
                 router.push('/volunteer');
             } else {

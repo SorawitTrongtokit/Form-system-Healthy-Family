@@ -85,7 +85,12 @@ export function logout(): void {
     currentVolunteer = null;
     if (typeof window !== 'undefined') {
         localStorage.removeItem('volunteerId');
+        localStorage.removeItem('volunteerName');
         localStorage.removeItem('volunteerNationalId');
+        // Clear cookies
+        document.cookie = 'volunteer-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'sb-access-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'sb-refresh-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
 }
 
@@ -97,9 +102,45 @@ export async function restoreSession(): Promise<Volunteer | null> {
     if (currentVolunteer) return currentVolunteer;
 
     if (typeof window !== 'undefined') {
-        const nationalId = localStorage.getItem('volunteerNationalId');
-        if (nationalId) {
-            return await loginAsync(nationalId);
+        // First check if we have a volunteer-session cookie
+        const cookies = document.cookie.split(';');
+        const sessionCookie = cookies.find(c => c.trim().startsWith('volunteer-session='));
+
+        if (sessionCookie) {
+            try {
+                const sessionValue = decodeURIComponent(sessionCookie.split('=')[1]);
+                const session = JSON.parse(sessionValue);
+                if (session.id && session.expiresAt > Date.now()) {
+                    // Fetch volunteer data from database
+                    const { data, error } = await supabase
+                        .from('volunteers')
+                        .select('*')
+                        .eq('id', session.id)
+                        .single();
+
+                    if (!error && data) {
+                        currentVolunteer = data as Volunteer;
+                        return currentVolunteer;
+                    }
+                }
+            } catch {
+                // Invalid cookie, continue with localStorage check
+            }
+        }
+
+        // Fallback to localStorage volunteerId
+        const volunteerId = localStorage.getItem('volunteerId');
+        if (volunteerId) {
+            const { data, error } = await supabase
+                .from('volunteers')
+                .select('*')
+                .eq('id', volunteerId)
+                .single();
+
+            if (!error && data) {
+                currentVolunteer = data as Volunteer;
+                return currentVolunteer;
+            }
         }
     }
     return null;

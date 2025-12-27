@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { calculateAge, getAgeGroup } from '@/lib/calculations';
 
@@ -211,9 +210,12 @@ export default function ExportPage() {
         };
     };
 
-    const exportResidentsByVillage = (villageNo: number) => {
+    const exportResidentsByVillage = async (villageNo: number) => {
         if (!data) return;
         setExporting(true);
+
+        // Dynamic import xlsx only when needed
+        const XLSX = await import('xlsx');
 
         const { residents } = getFilteredData(villageNo);
         const suffix = villageNo === 0 ? 'ทั้งหมด' : `หมู่${villageNo}`;
@@ -235,9 +237,12 @@ export default function ExportPage() {
         setExporting(false);
     };
 
-    const exportHealthRecordsByVillage = (villageNo: number) => {
+    const exportHealthRecordsByVillage = async (villageNo: number) => {
         if (!data) return;
         setExporting(true);
+
+        // Dynamic import xlsx only when needed
+        const XLSX = await import('xlsx');
 
         const { records } = getFilteredData(villageNo);
         const suffix = villageNo === 0 ? 'ทั้งหมด' : `หมู่${villageNo}`;
@@ -260,9 +265,12 @@ export default function ExportPage() {
         setExporting(false);
     };
 
-    const exportStatsByVillage = (villageNo: number) => {
+    const exportStatsByVillage = async (villageNo: number) => {
         if (!data) return;
         setExporting(true);
+
+        // Dynamic import xlsx only when needed
+        const XLSX = await import('xlsx');
 
         const { residents, records } = getFilteredData(villageNo);
         const suffix = villageNo === 0 ? 'ทั้งหมด' : `หมู่${villageNo}`;
@@ -290,9 +298,12 @@ export default function ExportPage() {
         setExporting(false);
     };
 
-    const exportAll = () => {
+    const exportAll = async () => {
         if (!data) return;
         setExporting(true);
+
+        // Dynamic import xlsx only when needed
+        const XLSX = await import('xlsx');
 
         const wb = XLSX.utils.book_new();
 

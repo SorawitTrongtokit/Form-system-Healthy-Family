@@ -160,6 +160,26 @@ export default function HouseMap({ houses }: HouseMapProps) {
                                 <span style="width: 8px; height: 8px; background: #9ca3af; border-radius: 50%;"></span> ยังไม่กรอก
                             </span>
                         </div>
+                        <a 
+                            href="https://www.google.com/maps/dir/?api=1&destination=${house.latitude},${house.longitude}" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style="
+                                display: block;
+                                margin-top: 10px;
+                                padding: 10px 16px;
+                                background: linear-gradient(135deg, #4285F4, #34A853);
+                                color: white;
+                                text-align: center;
+                                text-decoration: none;
+                                border-radius: 8px;
+                                font-size: 13px;
+                                font-weight: 600;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                            "
+                        >
+                            📍 นำทาง (Google Maps)
+                        </a>
                     </div>
                 `, { maxWidth: 300 });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { validateThaiNationalId } from '@/lib/validation';
 import { initializeStore, restoreSession } from '@/lib/store';
 
@@ -101,7 +102,7 @@ export default function LoginPage() {
                 {/* Logo and Header */}
                 <div className="text-center mb-8">
                     <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden">
-                        <img src="/logo.jpg" alt="รพ.สต.มะตูม" className="w-full h-full object-cover" />
+                        <Image src="/logo.jpg" alt="รพ.สต.มะตูม" width={96} height={96} className="w-full h-full object-cover" />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-2">
                         ระบบแบบฟอร์มครอบครัวสุขภาพดี

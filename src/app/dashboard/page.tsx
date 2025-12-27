@@ -164,6 +164,32 @@ export default function DashboardPage() {
                                         </td>
                                     </tr>
                                 ))}
+                                {/* แถวรวมทั้งหมด */}
+                                {(() => {
+                                    const totalResidents = stats.byVillage.reduce((sum, v) => sum + v.totalResidents, 0);
+                                    const totalSurveyed = stats.byVillage.reduce((sum, v) => sum + v.surveyedCount, 0);
+                                    const totalPassed = stats.byVillage.reduce((sum, v) => sum + v.passed, 0);
+                                    const totalFailed = stats.byVillage.reduce((sum, v) => sum + v.failed, 0);
+                                    const totalPassedPercent = totalSurveyed > 0 ? Math.round((totalPassed / totalSurveyed) * 100) : 0;
+                                    return (
+                                        <tr className="bg-teal-50 border-t-2 border-teal-300 font-bold">
+                                            <td className="py-3 px-4 text-teal-800">
+                                                📊 รวมทั้งหมด
+                                            </td>
+                                            <td className="text-center py-3 px-4 text-teal-800">{totalResidents}</td>
+                                            <td className="text-center py-3 px-4 text-teal-800">{totalSurveyed}</td>
+                                            <td className="text-center py-3 px-4">
+                                                <span className="badge badge-success">{totalPassed}</span>
+                                            </td>
+                                            <td className="text-center py-3 px-4">
+                                                <span className="badge badge-danger">{totalFailed}</span>
+                                            </td>
+                                            <td className={`text-center py-3 px-4 font-bold ${getPassedColor(totalPassedPercent)}`}>
+                                                {totalPassedPercent}%
+                                            </td>
+                                        </tr>
+                                    );
+                                })()}
                             </tbody>
                         </table>
                     </div>

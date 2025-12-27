@@ -381,10 +381,10 @@ export interface DashboardStats {
     }[];
     byVillage: {
         villageNo: number;
-        totalResidents: number;
-        surveyedCount: number;
-        passed: number;
-        failed: number;
+        totalHouses: number;
+        surveyedHouses: number;
+        passedHouses: number;
+        failedHouses: number;
         passedPercent: number;
     }[];
 }
@@ -444,29 +444,58 @@ export async function getDashboardStatsAsync(): Promise<DashboardStats> {
         };
     });
 
-    // Calculate stats by village
+    // Calculate stats by village (counting by household/houses)
     const villageNumbers = [...new Set(allHouses.map(h => h.village_no))].sort((a, b) => a - b);
+
+    // Create a map of resident_id to health record
+    const residentRecordMap = new Map<string, boolean | null>();
+    allRecords.forEach(hr => residentRecordMap.set(hr.resident_id, hr.passed_criteria));
+
+    // Create a map of house_id to residents
+    const houseResidentsMap = new Map<string, string[]>();
+    allResidents.forEach(r => {
+        const list = houseResidentsMap.get(r.house_id) || [];
+        list.push(r.id);
+        houseResidentsMap.set(r.house_id, list);
+    });
 
     const byVillage = villageNumbers.map(villageNo => {
         // Get houses in this village
-        const housesInVillage = allHouses.filter(h => h.village_no === villageNo).map(h => h.id);
-        const houseSet = new Set(housesInVillage);
+        const housesInVillage = allHouses.filter(h => h.village_no === villageNo);
+        const totalHouses = housesInVillage.length;
 
-        // Get residents in this village
-        const residentsInVillage = allResidents.filter(r => houseSet.has(r.house_id));
+        let surveyedHouses = 0;
+        let passedHouses = 0;
+        let failedHouses = 0;
 
-        // Get records in this village
-        const recordsInVillage = allRecords.filter(hr => houseSet.has(hr.house_id));
-        const passed = recordsInVillage.filter(hr => hr.passed_criteria === true).length;
-        const failed = recordsInVillage.filter(hr => hr.passed_criteria === false).length;
+        housesInVillage.forEach(house => {
+            const residentIds = houseResidentsMap.get(house.id) || [];
+            const surveyedResidents = residentIds.filter(rid => residentRecordMap.has(rid));
+
+            if (surveyedResidents.length > 0) {
+                // This house has been surveyed
+                surveyedHouses++;
+
+                // Check if all surveyed residents passed
+                const allPassed = surveyedResidents.every(rid => residentRecordMap.get(rid) === true);
+                const anyFailed = surveyedResidents.some(rid => residentRecordMap.get(rid) === false);
+
+                if (anyFailed) {
+                    failedHouses++;
+                } else if (allPassed) {
+                    passedHouses++;
+                }
+                // If mixed (some passed, no failures but not all passed), it counts as neither
+            }
+        });
 
         return {
             villageNo,
-            totalResidents: residentsInVillage.length,
-            surveyedCount: recordsInVillage.length,
-            passed,
-            failed,
-            passedPercent: recordsInVillage.length > 0 ? Math.round((passed / recordsInVillage.length) * 100) : 0
+            totalHouses,
+            surveyedHouses,
+            passedHouses,
+            failedHouses,
+            passedPercent: surveyedHouses > 0 ? Math.round((passedHouses / surveyedHouses) * 100) : 0
         };
     });
 

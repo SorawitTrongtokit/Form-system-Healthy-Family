@@ -241,6 +241,228 @@ export default function DashboardPage() {
                     );
                 })()}
 
+                {/* Household Survey Charts */}
+                {(() => {
+                    const totalHouses = stats.byVillage.reduce((sum, v) => sum + v.totalHouses, 0);
+                    const surveyedHouses = stats.byVillage.reduce((sum, v) => sum + v.surveyedHouses, 0);
+                    const passedHouses = stats.byVillage.reduce((sum, v) => sum + v.passedHouses, 0);
+                    const failedHouses = stats.byVillage.reduce((sum, v) => sum + v.failedHouses, 0);
+                    const notSurveyedHouses = totalHouses - surveyedHouses;
+
+                    // Calculate percentages for pie chart
+                    const passedPercent = totalHouses > 0 ? (passedHouses / totalHouses) * 100 : 0;
+                    const failedPercent = totalHouses > 0 ? (failedHouses / totalHouses) * 100 : 0;
+                    const notSurveyedPercent = totalHouses > 0 ? (notSurveyedHouses / totalHouses) * 100 : 0;
+
+                    // Calculate stroke-dasharray for SVG pie chart
+                    const circumference = 2 * Math.PI * 40; // radius = 40
+                    const passedDash = (passedPercent / 100) * circumference;
+                    const failedDash = (failedPercent / 100) * circumference;
+                    const passedOffset = 0;
+                    const failedOffset = -passedDash;
+                    const notSurveyedOffset = -(passedDash + failedDash);
+
+                    // Bar chart dimensions
+                    const barChartWidth = 320;
+                    const barChartHeight = 200;
+                    const barWidth = 30;
+                    const barGap = 15;
+                    const maxPercent = 100;
+                    const chartPadding = { top: 20, right: 20, bottom: 40, left: 40 };
+                    const chartInnerWidth = barChartWidth - chartPadding.left - chartPadding.right;
+                    const chartInnerHeight = barChartHeight - chartPadding.top - chartPadding.bottom;
+
+                    return (
+                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                            {/* Household Survey Result Pie Chart */}
+                            <div className="card p-6">
+                                <h3 className="font-bold text-gray-800 mb-4 text-center">🏠 สัดส่วนผลการสำรวจรายหลังคาเรือน</h3>
+                                <div className="flex items-center justify-center">
+                                    <div className="relative">
+                                        <svg width="180" height="180" viewBox="0 0 100 100">
+                                            {/* Background circle */}
+                                            <circle cx="50" cy="50" r="40" fill="#f3f4f6" />
+
+                                            {/* Not Surveyed (Gray) */}
+                                            <circle
+                                                cx="50" cy="50" r="40"
+                                                fill="transparent"
+                                                stroke="#9ca3af"
+                                                strokeWidth="20"
+                                                strokeDasharray={`${(notSurveyedPercent / 100) * circumference} ${circumference}`}
+                                                strokeDashoffset={notSurveyedOffset}
+                                                transform="rotate(-90 50 50)"
+                                            />
+
+                                            {/* Failed (Red) */}
+                                            <circle
+                                                cx="50" cy="50" r="40"
+                                                fill="transparent"
+                                                stroke="#ef4444"
+                                                strokeWidth="20"
+                                                strokeDasharray={`${failedDash} ${circumference}`}
+                                                strokeDashoffset={failedOffset}
+                                                transform="rotate(-90 50 50)"
+                                            />
+
+                                            {/* Passed (Green) */}
+                                            <circle
+                                                cx="50" cy="50" r="40"
+                                                fill="transparent"
+                                                stroke="#22c55e"
+                                                strokeWidth="20"
+                                                strokeDasharray={`${passedDash} ${circumference}`}
+                                                strokeDashoffset={passedOffset}
+                                                transform="rotate(-90 50 50)"
+                                            />
+
+                                            {/* Center text */}
+                                            <text x="50" y="46" textAnchor="middle" className="text-xs font-bold fill-gray-700">
+                                                {surveyedHouses}
+                                            </text>
+                                            <text x="50" y="58" textAnchor="middle" className="text-[8px] fill-gray-500">
+                                                หลังคาเรือน
+                                            </text>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                {/* Legend */}
+                                <div className="flex flex-wrap justify-center gap-4 mt-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                        <span className="text-sm text-gray-600">ผ่าน {passedHouses} ({passedPercent.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-red-500 rounded"></div>
+                                        <span className="text-sm text-gray-600">ไม่ผ่าน {failedHouses} ({failedPercent.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-400 rounded"></div>
+                                        <span className="text-sm text-gray-600">ยังไม่สำรวจ {notSurveyedHouses} ({notSurveyedPercent.toFixed(1)}%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Village Pass Rate Bar Chart */}
+                            <div className="card p-6">
+                                <h3 className="font-bold text-gray-800 mb-4 text-center">📊 อัตราผ่านเกณฑ์รายหมู่บ้าน (หลังคาเรือน)</h3>
+                                <div className="flex items-center justify-center overflow-x-auto">
+                                    <svg width={barChartWidth} height={barChartHeight} className="overflow-visible">
+                                        {/* Y-axis grid lines */}
+                                        {[0, 25, 50, 75, 100].map(percent => (
+                                            <g key={percent}>
+                                                <line
+                                                    x1={chartPadding.left}
+                                                    y1={chartPadding.top + chartInnerHeight - (percent / maxPercent) * chartInnerHeight}
+                                                    x2={barChartWidth - chartPadding.right}
+                                                    y2={chartPadding.top + chartInnerHeight - (percent / maxPercent) * chartInnerHeight}
+                                                    stroke="#e5e7eb"
+                                                    strokeWidth="1"
+                                                />
+                                                <text
+                                                    x={chartPadding.left - 5}
+                                                    y={chartPadding.top + chartInnerHeight - (percent / maxPercent) * chartInnerHeight + 4}
+                                                    textAnchor="end"
+                                                    className="text-[10px] fill-gray-500"
+                                                >
+                                                    {percent}%
+                                                </text>
+                                            </g>
+                                        ))}
+
+                                        {/* 30% Threshold dashed line */}
+                                        <line
+                                            x1={chartPadding.left}
+                                            y1={chartPadding.top + chartInnerHeight - (30 / maxPercent) * chartInnerHeight}
+                                            x2={barChartWidth - chartPadding.right}
+                                            y2={chartPadding.top + chartInnerHeight - (30 / maxPercent) * chartInnerHeight}
+                                            stroke="#f97316"
+                                            strokeWidth="2"
+                                            strokeDasharray="6 4"
+                                        />
+                                        <text
+                                            x={barChartWidth - chartPadding.right + 5}
+                                            y={chartPadding.top + chartInnerHeight - (30 / maxPercent) * chartInnerHeight + 4}
+                                            className="text-[9px] fill-orange-500 font-semibold"
+                                        >
+                                            เกณฑ์ 30%
+                                        </text>
+
+                                        {/* Bars */}
+                                        {stats.byVillage.map((village, index) => {
+                                            const barX = chartPadding.left + index * (barWidth + barGap) + barGap;
+                                            const barHeight = (village.passedPercent / maxPercent) * chartInnerHeight;
+                                            const barY = chartPadding.top + chartInnerHeight - barHeight;
+                                            const barColor = village.passedPercent >= 30 ? '#22c55e' : '#ef4444';
+
+                                            return (
+                                                <g key={village.villageNo}>
+                                                    {/* Bar */}
+                                                    <rect
+                                                        x={barX}
+                                                        y={barY}
+                                                        width={barWidth}
+                                                        height={barHeight}
+                                                        fill={barColor}
+                                                        rx="3"
+                                                        className="transition-all duration-300"
+                                                    />
+                                                    {/* Percentage label on top of bar */}
+                                                    <text
+                                                        x={barX + barWidth / 2}
+                                                        y={barY - 5}
+                                                        textAnchor="middle"
+                                                        className="text-[10px] font-bold"
+                                                        fill={barColor}
+                                                    >
+                                                        {village.passedPercent}%
+                                                    </text>
+                                                    {/* Village label */}
+                                                    <text
+                                                        x={barX + barWidth / 2}
+                                                        y={chartPadding.top + chartInnerHeight + 15}
+                                                        textAnchor="middle"
+                                                        className="text-[10px] fill-gray-600"
+                                                    >
+                                                        ม.{village.villageNo}
+                                                    </text>
+                                                </g>
+                                            );
+                                        })}
+
+                                        {/* X-axis */}
+                                        <line
+                                            x1={chartPadding.left}
+                                            y1={chartPadding.top + chartInnerHeight}
+                                            x2={barChartWidth - chartPadding.right}
+                                            y2={chartPadding.top + chartInnerHeight}
+                                            stroke="#9ca3af"
+                                            strokeWidth="1"
+                                        />
+                                    </svg>
+                                </div>
+
+                                {/* Legend */}
+                                <div className="flex flex-wrap justify-center gap-4 mt-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                        <span className="text-sm text-gray-600">ผ่านเกณฑ์ ≥30%</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-red-500 rounded"></div>
+                                        <span className="text-sm text-gray-600">ต่ำกว่าเกณฑ์ &lt;30%</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-1 bg-orange-500" style={{ borderTop: '2px dashed #f97316' }}></div>
+                                        <span className="text-sm text-gray-600">เส้นเกณฑ์ 30%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* Age Group Stats */}
                 <div className="card p-6 mb-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">📊 สถิติแยกตามกลุ่มอายุ</h2>
@@ -294,7 +516,7 @@ export default function DashboardPage() {
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-100">
                                     <th className="text-left py-3 px-4 text-gray-700 font-semibold">หมู่บ้าน</th>
-                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">ประชากร</th>
+                                    <th className="text-center py-3 px-4 text-gray-700 font-semibold">หลังคาเรือน</th>
                                     <th className="text-center py-3 px-4 text-gray-700 font-semibold">สำรวจแล้ว</th>
                                     <th className="text-center py-3 px-4 text-gray-700 font-semibold">ผ่านเกณฑ์</th>
                                     <th className="text-center py-3 px-4 text-gray-700 font-semibold">ไม่ผ่านเกณฑ์</th>
@@ -307,13 +529,13 @@ export default function DashboardPage() {
                                         <td className="py-3 px-4 text-gray-800 font-medium">
                                             🏠 หมู่ที่ {village.villageNo}
                                         </td>
-                                        <td className="text-center py-3 px-4 text-gray-600">{village.totalResidents}</td>
-                                        <td className="text-center py-3 px-4 text-gray-600">{village.surveyedCount}</td>
+                                        <td className="text-center py-3 px-4 text-gray-600">{village.totalHouses}</td>
+                                        <td className="text-center py-3 px-4 text-gray-600">{village.surveyedHouses}</td>
                                         <td className="text-center py-3 px-4">
-                                            <span className="badge badge-success">{village.passed}</span>
+                                            <span className="badge badge-success">{village.passedHouses}</span>
                                         </td>
                                         <td className="text-center py-3 px-4">
-                                            <span className="badge badge-danger">{village.failed}</span>
+                                            <span className="badge badge-danger">{village.failedHouses}</span>
                                         </td>
                                         <td className={`text-center py-3 px-4 font-bold ${getPassedColor(village.passedPercent)}`}>
                                             {village.passedPercent}%
@@ -322,17 +544,17 @@ export default function DashboardPage() {
                                 ))}
                                 {/* แถวรวมทั้งหมด */}
                                 {(() => {
-                                    const totalResidents = stats.byVillage.reduce((sum, v) => sum + v.totalResidents, 0);
-                                    const totalSurveyed = stats.byVillage.reduce((sum, v) => sum + v.surveyedCount, 0);
-                                    const totalPassed = stats.byVillage.reduce((sum, v) => sum + v.passed, 0);
-                                    const totalFailed = stats.byVillage.reduce((sum, v) => sum + v.failed, 0);
+                                    const totalHouses = stats.byVillage.reduce((sum, v) => sum + v.totalHouses, 0);
+                                    const totalSurveyed = stats.byVillage.reduce((sum, v) => sum + v.surveyedHouses, 0);
+                                    const totalPassed = stats.byVillage.reduce((sum, v) => sum + v.passedHouses, 0);
+                                    const totalFailed = stats.byVillage.reduce((sum, v) => sum + v.failedHouses, 0);
                                     const totalPassedPercent = totalSurveyed > 0 ? Math.round((totalPassed / totalSurveyed) * 100) : 0;
                                     return (
                                         <tr className="bg-teal-50 border-t-2 border-teal-300 font-bold">
                                             <td className="py-3 px-4 text-teal-800">
                                                 📊 รวมทั้งหมด
                                             </td>
-                                            <td className="text-center py-3 px-4 text-teal-800">{totalResidents}</td>
+                                            <td className="text-center py-3 px-4 text-teal-800">{totalHouses}</td>
                                             <td className="text-center py-3 px-4 text-teal-800">{totalSurveyed}</td>
                                             <td className="text-center py-3 px-4">
                                                 <span className="badge badge-success">{totalPassed}</span>

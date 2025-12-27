@@ -124,6 +124,7 @@ export default function LoginPage() {
                             </label>
                             <input
                                 type="text"
+                                inputMode="numeric"
                                 className="input"
                                 placeholder="กรอกเลขบัตรประชาชน"
                                 value={nationalId}
@@ -146,6 +147,7 @@ export default function LoginPage() {
                             </label>
                             <input
                                 type="tel"
+                                inputMode="numeric"
                                 className="input"
                                 placeholder="08X-XXX-XXXX"
                                 value={phone}

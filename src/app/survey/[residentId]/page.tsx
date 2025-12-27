@@ -262,6 +262,7 @@ export default function SurveyPage() {
                             <label className="form-label">น้ำหนัก (กก.)</label>
                             <input
                                 type="number"
+                                inputMode="decimal"
                                 step="0.1"
                                 className="input"
                                 placeholder="กรอกน้ำหนัก"
@@ -274,6 +275,7 @@ export default function SurveyPage() {
                             <label className="form-label">ส่วนสูง (ซม.)</label>
                             <input
                                 type="number"
+                                inputMode="decimal"
                                 step="0.1"
                                 className="input"
                                 placeholder="กรอกส่วนสูง"

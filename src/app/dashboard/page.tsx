@@ -85,6 +85,162 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+                {/* Pie Charts Section */}
+                {(() => {
+                    const totalPassed = stats.byAgeGroup.reduce((sum, g) => sum + g.passed, 0);
+                    const totalFailed = stats.byAgeGroup.reduce((sum, g) => sum + g.failed, 0);
+                    const notSurveyed = stats.totalResidents - stats.surveyedCount;
+                    const total = stats.totalResidents;
+
+                    // Calculate percentages for pie chart
+                    const passedPercent = total > 0 ? (totalPassed / total) * 100 : 0;
+                    const failedPercent = total > 0 ? (totalFailed / total) * 100 : 0;
+                    const notSurveyedPercent = total > 0 ? (notSurveyed / total) * 100 : 0;
+
+                    // Calculate stroke-dasharray for SVG pie chart
+                    const circumference = 2 * Math.PI * 40; // radius = 40
+                    const passedDash = (passedPercent / 100) * circumference;
+                    const failedDash = (failedPercent / 100) * circumference;
+                    const passedOffset = 0;
+                    const failedOffset = -passedDash;
+                    const notSurveyedOffset = -(passedDash + failedDash);
+
+                    return (
+                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                            {/* Survey Result Pie Chart */}
+                            <div className="card p-6">
+                                <h3 className="font-bold text-gray-800 mb-4 text-center">🥧 สัดส่วนผลการสำรวจ</h3>
+                                <div className="flex items-center justify-center">
+                                    <div className="relative">
+                                        <svg width="180" height="180" viewBox="0 0 100 100">
+                                            {/* Background circle */}
+                                            <circle cx="50" cy="50" r="40" fill="#f3f4f6" />
+
+                                            {/* Not Surveyed (Gray) */}
+                                            <circle
+                                                cx="50" cy="50" r="40"
+                                                fill="transparent"
+                                                stroke="#9ca3af"
+                                                strokeWidth="20"
+                                                strokeDasharray={`${(notSurveyedPercent / 100) * circumference} ${circumference}`}
+                                                strokeDashoffset={notSurveyedOffset}
+                                                transform="rotate(-90 50 50)"
+                                            />
+
+                                            {/* Failed (Red) */}
+                                            <circle
+                                                cx="50" cy="50" r="40"
+                                                fill="transparent"
+                                                stroke="#ef4444"
+                                                strokeWidth="20"
+                                                strokeDasharray={`${failedDash} ${circumference}`}
+                                                strokeDashoffset={failedOffset}
+                                                transform="rotate(-90 50 50)"
+                                            />
+
+                                            {/* Passed (Green) */}
+                                            <circle
+                                                cx="50" cy="50" r="40"
+                                                fill="transparent"
+                                                stroke="#22c55e"
+                                                strokeWidth="20"
+                                                strokeDasharray={`${passedDash} ${circumference}`}
+                                                strokeDashoffset={passedOffset}
+                                                transform="rotate(-90 50 50)"
+                                            />
+
+                                            {/* Center text */}
+                                            <text x="50" y="46" textAnchor="middle" className="text-xs font-bold fill-gray-700">
+                                                {stats.surveyedCount}
+                                            </text>
+                                            <text x="50" y="58" textAnchor="middle" className="text-[8px] fill-gray-500">
+                                                สำรวจแล้ว
+                                            </text>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                {/* Legend */}
+                                <div className="flex flex-wrap justify-center gap-4 mt-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                        <span className="text-sm text-gray-600">ผ่าน {totalPassed} ({passedPercent.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-red-500 rounded"></div>
+                                        <span className="text-sm text-gray-600">ไม่ผ่าน {totalFailed} ({failedPercent.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-400 rounded"></div>
+                                        <span className="text-sm text-gray-600">ยังไม่สำรวจ {notSurveyed} ({notSurveyedPercent.toFixed(1)}%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Age Group Distribution Pie Chart */}
+                            <div className="card p-6">
+                                <h3 className="font-bold text-gray-800 mb-4 text-center">👥 สัดส่วนประชากรตามกลุ่มวัย</h3>
+                                <div className="flex items-center justify-center">
+                                    <div className="relative">
+                                        <svg width="180" height="180" viewBox="0 0 100 100">
+                                            {/* Background */}
+                                            <circle cx="50" cy="50" r="40" fill="#f3f4f6" />
+
+                                            {/* Age group segments */}
+                                            {(() => {
+                                                const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#4ade80', '#fbbf24'];
+                                                let offset = 0;
+                                                return stats.byAgeGroup.map((group, index) => {
+                                                    const percent = total > 0 ? (group.total / total) * 100 : 0;
+                                                    const dash = (percent / 100) * circumference;
+                                                    const segment = (
+                                                        <circle
+                                                            key={group.ageGroup}
+                                                            cx="50" cy="50" r="40"
+                                                            fill="transparent"
+                                                            stroke={colors[index]}
+                                                            strokeWidth="20"
+                                                            strokeDasharray={`${dash} ${circumference}`}
+                                                            strokeDashoffset={-offset}
+                                                            transform="rotate(-90 50 50)"
+                                                        />
+                                                    );
+                                                    offset += dash;
+                                                    return segment;
+                                                });
+                                            })()}
+
+                                            {/* Center text */}
+                                            <text x="50" y="46" textAnchor="middle" className="text-xs font-bold fill-gray-700">
+                                                {stats.totalResidents}
+                                            </text>
+                                            <text x="50" y="58" textAnchor="middle" className="text-[8px] fill-gray-500">
+                                                คน
+                                            </text>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                {/* Legend */}
+                                <div className="grid grid-cols-2 gap-2 mt-4 text-sm">
+                                    {stats.byAgeGroup.map((group, index) => {
+                                        const colors = ['bg-pink-400', 'bg-blue-400', 'bg-purple-400', 'bg-green-400', 'bg-amber-400'];
+                                        const percent = total > 0 ? ((group.total / total) * 100).toFixed(1) : '0';
+                                        return (
+                                            <div key={group.ageGroup} className="flex items-center gap-2">
+                                                <div className={`w-3 h-3 ${colors[index]} rounded`}></div>
+                                                <span className="text-gray-600">
+                                                    {getAgeGroupLabel(group.ageGroup as '0-5' | '6-14' | '15-18' | '19-59' | '60+')} ({percent}%)
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* Age Group Stats */}
                 <div className="card p-6 mb-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">📊 สถิติแยกตามกลุ่มอายุ</h2>
